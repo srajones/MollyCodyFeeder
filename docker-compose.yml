@@ -1,0 +1,39 @@
+services:
+  feeder-watchdog:
+    build: .
+    container_name: poor-puppy-watchdog
+    restart: unless-stopped
+    stop_grace_period: 15s
+    env_file:
+      - .env
+    environment:
+      # Keep the SQLite DB inside the mounted ./data volume so it survives rebuilds
+      - DB_PATH=/app/data/kibble_history.db
+      - CAPTURES_DIR=/tmp/poor_puppy_captures
+      # HTTP API stays inside the container (healthcheck only); no ports are published.
+      # The optional web control page (./vps_install.sh) publishes it on the VPS loopback only, via a
+      # git-ignored docker-compose.override.yml (picked up automatically by docker compose / update-pp).
+      - WEBHOOK_LISTEN_HOST=127.0.0.1
+    # 100% outbound-only by default (no inbound ports exposed on the VPS).
+    # Connects outward to Molly & Cody Cloud API + MQTT 8883 + STUN/TURN UDP relay.
+    volumes:
+      - ./tuya_session.json:/app/tuya_session.json
+      - ./data:/app/data
+      - ./captures:/tmp/poor_puppy_captures
+    # Sized for a shared 2 vCPU / 4 GB VPS
+    mem_limit: 1g
+    cpus: 1.5
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

@@ -1,0 +1,1009 @@
+#!/usr/bin/env bash
+# ============================================================================
+# update-pp — Safe day-2 updater for Poor Puppy on an Ubuntu VPS
+#
+# Usage:
+#   update-pp                  fetch + stay on current branch + ff-only pull + safe rebuild
+#   update-pp --latest         fetch + auto-pick newest vN / vN.M branch + ff-only pull + safe rebuild
+#   update-pp --branch v0.6    fetch + switch to v0.6 + ff-only pull + safe rebuild
+#   update-pp --no-pull        safe rebuild & restart only (no git operations)
+#   update-pp --status         what's installed, is an update available, container health, next meal, history
+#   update-pp --selftest       run the connection self-test against the running watchdog (no feed)
+#
+# Every update (the "safe rebuild"):
+#   1. Refuses to start within UPDATE_GUARD_BEFORE_MIN (10) min before / UPDATE_GUARD_AFTER_MIN (5) min after
+#      a scheduled meal, or while a feed verification is running (a restart kills the recording). --force overrides.
+#   2. git fetch + ff-only pull, then re-runs itself from the NEWLY pulled update-pp (new logic for the rest).
+#   3. Tags the running image as poor-puppy-watchdog:rollback (+ :rollback-<oldcommit>).
+#   4. Builds the new image while the old container keeps running (build failure -> git restored, nothing changed).
+#   5. Offline smoke test of the new image (imports, .env config, DB migrations + quick_check on a COPY of the DB).
+#   6. Backs up data/kibble_history.db to data/backups/pre-update-<time>-<oldcommit>.db (newest 5 kept).
+#   7. Switches containers, waits for healthy + "Puppy Feeder Watchdog running", then runs GET /selftest inside
+#      the container (existing cloud session only — never a password login — and never dispenses food).
+#   8. Any failure -> automatic rollback to the previous image + previous commit on the original branch
+#      (--no-rollback to opt out). Every run is appended to data/update-history.log.
+#
+# Guarantees:
+#   - Refuses to run if .env, data/, or captures/ is missing (use ./install_ubuntu.sh first)
+#   - Refuses to pull if tracked code files have uncommitted changes (ignores operator data/captures/exports)
+#   - Never overwrites or deletes .env values, data/, captures/, tuya_session.json, or exports/
+#   - Only appends newly added keys from .env.example that are missing in .env
+#   - Scoped strictly to this directory's docker compose project (zero host ports)
+# ============================================================================
+set -euo pipefail
+
+CONTAINER="poor-puppy-watchdog"
+SERVICE="feeder-watchdog"
+ROLLBACK_REPO="poor-puppy-watchdog"
+RUNNING_MARKER="Puppy Feeder Watchdog running"
+
+usage() {
+    cat <<'EOF'
+Usage: update-pp [options]
+
+Default:
+  update-pp                  Stay on current branch, git pull --ff-only, safe rebuild (build, test, switch, verify)
+
+Options:
+  --latest             Auto-select highest version branch (vN / vN.M) across local+origin
+  --branch NAME        Switch to / stay on branch NAME before pulling
+  --no-pull            Skip git fetch/checkout/pull; safe rebuild and restart only
+  --force              Skip the meal-window / busy guard (a restart during a meal loses that meal's verification)
+  --no-rollback        On a failed check, leave the new version running and print manual rollback steps
+  --no-camera-check    Skip the camera snapshot in the post-update self-test
+  --status             Show installed version, available updates, container health, next meal, update history
+  --selftest           Run the connection self-test against the running container (no feed, no login)
+  --rollback-on-fail   (Accepted for compatibility; automatic rollback is now the default)
+  -h, --help           Show this help message
+
+Settings (.env): UPDATE_GUARD_BEFORE_MIN=10  UPDATE_GUARD_AFTER_MIN=5
+EOF
+}
+
+say()  { printf '\n\033[1;36m🐶 %s\033[0m\n' "$*"; }
+warn() { printf '\033[1;33m⚠️  %s\033[0m\n' "$*"; }
+err()  { printf '\033[1;31m✗ %s\033[0m\n' "$*" >&2; }
+
+# --------------------------------------------------------------------------- python helper (stdlib only)
+write_py_helper() {
+    PYHELP="$(mktemp "${TMPDIR:-/tmp}/pp-update-helper.XXXXXX")"
+    cat > "$PYHELP" <<'PY'
+import ast, json, os, re, sqlite3, subprocess, sys, time
+from datetime import datetime
+from pathlib import Path
+
+
+def read_env(path):
+    vals = {}
+    p = Path(path)
+    if p.is_file():
+        for line in p.read_text(encoding="utf-8", errors="ignore").splitlines():
+            m = re.match(r"^\s*([A-Z0-9_]+)\s*=(.*)$", line)
+            if m:
+                vals[m.group(1)] = re.sub(r"\s+#.*$", "", m.group(2)).strip().strip('"').strip("'")
+    return vals
+
+
+def env_backfill(env_path, ex_path):
+    env_path, ex_path = Path(env_path), Path(ex_path)
+    existing_lines = env_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    existing_keys = set()
+    for line in existing_lines:
+        m = re.match(r"^\s*([A-Z0-9_]+)\s*=", line)
+        if m:
+            existing_keys.add(m.group(1))
+    added = []
+    if ex_path.is_file():
+        for line in ex_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            m = re.match(r"^\s*([A-Z0-9_]+)\s*=(.*)$", line)
+            if m and m.group(1) not in existing_keys:
+                val = re.sub(r"\s+#.*$", "", m.group(2)).strip()
+                added.append(f"{m.group(1)}={val}")
+                existing_keys.add(m.group(1))
+    defaults = {
+        "KEEP_FOOTAGE": "true",
+        "CAPTURE_RETENTION_DAYS": "30",
+        "KEEP_FAILED_FOOTAGE_DAYS": "90",
+        "VIDEO_KEEP_DAYS_OK": "0",
+        "CAPTURE_MAX_MB": "2048",
+        "DB_RETENTION_DAYS": "0",
+        "EXPORT_ML_ON_PRUNE": "true",
+        "ML_EXPORT_PATH": "data/ml_events.jsonl",
+        "WEBHOOK_LISTEN_HOST": "127.0.0.1",
+        "HA_NOTIFY_ON_SUCCESS": "true",
+    }
+    for k, v in defaults.items():
+        if k not in existing_keys:
+            added.append(f"{k}={v}")
+            existing_keys.add(k)
+    if added:
+        with open(env_path, "a", encoding="utf-8") as fh:
+            if existing_lines and existing_lines[-1].strip() != "":
+                fh.write("\n")
+            fh.write("# --- Added by update-pp (defaults for new settings) ---\n")
+            for item in added:
+                fh.write(item + "\n")
+        print(f"   Added {len(added)} new default key(s) to .env (existing values untouched).")
+
+
+def latest_branch(remote_only=False):
+    out = subprocess.check_output(["git", "branch", "-a", "--format=%(refname:short)"], text=True)
+    candidates = set()
+    for raw in out.splitlines():
+        name = raw.strip()
+        is_remote = name.startswith("origin/")
+        if remote_only and not is_remote:
+            continue
+        if is_remote:
+            name = name[len("origin/"):]
+        if re.fullmatch(r"v\d+(?:\.\d+)*", name):
+            candidates.add(name)
+    if not candidates:
+        print("" if remote_only else subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], text=True).strip())
+        return
+    print(sorted(candidates, key=lambda b: tuple(int(x) for x in b[1:].split(".")))[-1])
+
+
+def _mins(sec):
+    sec = max(0, int(sec))
+    return f"{sec // 3600}h{(sec % 3600) // 60:02d}m" if sec >= 3600 else f"{max(1, round(sec / 60))} min"
+
+
+def guard(env_file, health_raw, logs_file):
+    """Prints 'ok|block|unknown<TAB>wait_seconds<TAB>message'. Meal times come from the running daemon's
+    /health (v0.6+) or, for older containers, from its 'Monitoring meals' / 'Synced ... DP 207' log lines."""
+    env = read_env(env_file)
+    before = int(float(env.get("UPDATE_GUARD_BEFORE_MIN") or 10) * 60)
+    after = int(float(env.get("UPDATE_GUARD_AFTER_MIN") or 5) * 60)
+    preroll = int(float(env.get("MEAL_PREROLL_SECONDS") or 40))
+    before = max(before, preroll + 60)
+    try:
+        health = json.loads(health_raw) if health_raw.strip() else None
+    except Exception:
+        health = None
+    if isinstance(health, dict) and "busy" in health:
+        if health.get("busy"):
+            print("block\t60\ta feed verification is running right now")
+            return
+        if not health.get("meal_count") or health.get("next_meal_in_sec") is None:
+            print("ok\t0\tno scheduled meal checks in the running watchdog")
+            return
+        nxt = int(health["next_meal_in_sec"])
+        last = health.get("last_meal_ago_sec")
+        last = int(last) if last is not None else None
+        source = "watchdog"
+    else:
+        text = Path(logs_file).read_text(encoding="utf-8", errors="ignore") if logs_file and Path(logs_file).is_file() else ""
+        times, fallback_after = None, False
+        pat = re.compile(r"(?:Monitoring meals: |Synced enabled feeding times from feeder DP 207: )(\[[^\]]*\])")
+        for line in text.splitlines():
+            m = pat.search(line)
+            if m:
+                try:
+                    times, fallback_after = [str(t) for t in ast.literal_eval(m.group(1))], False
+                except Exception:
+                    pass
+            elif "Could not sync schedule from feeder, using fallback" in line and times is not None:
+                fallback_after = True
+        if times is None:
+            print("unknown\t0\tcould not determine the meal schedule (older watchdog without schedule lines in its logs)")
+            return
+        if fallback_after:  # the daemon fell back to FEED_SCHEDULE_TIMES: guard both lists (conservative)
+            fb = env.get("FEED_SCHEDULE_TIMES") or "07:00,11:00,16:00,19:00"
+            times = sorted(set(times) | {t.strip() for t in fb.split(",") if t.strip()})
+        if not times:
+            print("ok\t0\tno enabled meals in the watchdog's last schedule sync")
+            return
+        if env.get("TZ"):
+            os.environ["TZ"] = env["TZ"]
+        else:
+            os.environ["TZ"] = "UTC"  # the container runs in UTC when TZ is not set in .env
+        time.tzset()
+        now_s = os.environ.get("PP_NOW_EPOCH")
+        now = datetime.fromtimestamp(float(now_s)) if now_s else datetime.now()
+        nexts, lasts = [], []
+        for t in times:
+            try:
+                hh, mm = (int(x) for x in t.split(":")[:2])
+            except ValueError:
+                continue
+            d = (now.replace(hour=hh, minute=mm, second=0, microsecond=0) - now).total_seconds()
+            nexts.append(d % 86400)
+            lasts.append((-d) % 86400)
+        if not nexts:
+            print("unknown\t0\tcould not parse the meal times from the logs")
+            return
+        nxt, last, source = int(min(nexts)), int(min(lasts)), "logs"
+    if nxt <= before:
+        print(f"block\t{nxt + after}\tnext meal is in {_mins(nxt)} (updates wait until {after // 60} min after it) [{source}]")
+    elif last is not None and last < after:
+        print(f"block\t{after - last}\ta meal was {_mins(last)} ago (its verification may still be running) [{source}]")
+    else:
+        print(f"ok\t0\tnext meal in {_mins(nxt)} [{source}]")
+
+
+def backup(db_path, backup_dir, old_commit, keep):
+    db, bdir = Path(db_path), Path(backup_dir)
+    if not db.exists():
+        print("SKIP no database yet")
+        return 0
+    if os.geteuid() == 0:  # write as the data/ owner (container uid 1000) so no root-owned files land in data/
+        st = db.parent.stat()
+        if st.st_uid != 0:
+            os.setgid(st.st_gid)
+            os.setuid(st.st_uid)
+    bdir.mkdir(parents=True, exist_ok=True)
+    out = bdir / f"pre-update-{time.strftime('%Y%m%d-%H%M%S')}-{old_commit}.db"
+    src = sqlite3.connect(str(db), timeout=30.0)
+    try:
+        dst = sqlite3.connect(str(out))
+        try:
+            src.backup(dst)
+            res = dst.execute("PRAGMA quick_check;").fetchone()
+        finally:
+            dst.close()
+    finally:
+        src.close()
+    if not res or res[0] != "ok":
+        out.unlink(missing_ok=True)
+        print(f"FAIL backup quick_check returned {res}")
+        return 1
+    os.chmod(out, 0o600)
+    olds = sorted(bdir.glob("pre-update-*.db"))
+    for p in olds[: max(0, len(olds) - int(keep))]:
+        p.unlink(missing_ok=True)
+    print(f"OK {out}")
+    return 0
+
+
+ICONS = {"pass": "✅", "warn": "⚠️ ", "fail": "❌", "skip": "⏭️ "}
+
+
+def selftest_summary(raw_file):
+    """Exit codes: 0 pass, 1 warn, 2 fail, 3 busy (409), 4 not available on this version (404), 5 no answer."""
+    raw = Path(raw_file).read_text(encoding="utf-8", errors="ignore")
+    m = re.search(r"\nHTTP_CODE:(\d{3})\s*$", "\n" + raw)
+    code = int(m.group(1)) if m else 0
+    body = raw[: m.start() - 1] if m else raw
+    try:
+        rep = json.loads(body) if body.strip() else None
+    except Exception:
+        rep = None
+    if code == 404:
+        print("   ⚠️  /selftest not available in this version (health check only)")
+        return 4
+    if code == 409:
+        print(f"   ⏳ busy: {(rep or {}).get('error', 'verification running')}")
+        return 3
+    if not isinstance(rep, dict) or "overall" not in rep:
+        tail = " ".join(body.strip().splitlines()[-3:])[:200] or "no response"
+        print(f"   ❌ self-test gave no usable answer (HTTP {code or '?'}): {tail}")
+        return 5
+    for c in rep.get("checks", []):
+        print(f"   {ICONS.get(c.get('status'), '•')} {c.get('name')}: {c.get('detail')}")
+    print(f"   => overall: {str(rep['overall']).upper()} ({rep.get('duration_sec', '?')}s)")
+    return {"pass": 0, "warn": 1}.get(rep["overall"], 2)
+
+
+if __name__ == "__main__":
+    cmd, args = sys.argv[1], sys.argv[2:]
+    if cmd == "env-backfill":
+        env_backfill(*args)
+    elif cmd == "latest-branch":
+        latest_branch(remote_only=bool(args and args[0] == "remote"))
+    elif cmd == "guard":
+        guard(args[0], os.environ.get("PP_HEALTH_JSON", ""), args[1] if len(args) > 1 else "")
+    elif cmd == "backup":
+        sys.exit(backup(*args))
+    elif cmd == "selftest-summary":
+        sys.exit(selftest_summary(args[0]))
+    elif cmd == "env-get":
+        print(read_env(args[0]).get(args[1], ""))
+PY
+}
+
+# Offline smoke test executed inside the NEW image (no cloud, no MQTT, no camera; DB work on a private copy)
+SMOKE_PY='
+import importlib, os, pkgutil, sqlite3, sys, tempfile
+errors, n = [], 0
+import watchdog
+for mod in pkgutil.walk_packages(watchdog.__path__, "watchdog."):
+    try:
+        importlib.import_module(mod.name)
+        n += 1
+    except Exception as exc:
+        errors.append("import %s: %r" % (mod.name, exc))
+try:
+    import feeder_cli  # noqa: F401
+except Exception as exc:
+    errors.append("import feeder_cli: %r" % (exc,))
+try:
+    from watchdog.config import WatchdogConfig
+    WatchdogConfig()
+except Exception as exc:
+    errors.append("config from .env: %r" % (exc,))
+src_path = os.environ.get("DB_PATH", "/app/data/kibble_history.db")
+try:
+    from watchdog.db import KibbleDatabase
+    with tempfile.TemporaryDirectory(prefix="pp-smoke-") as td:
+        copy = os.path.join(td, "smoke.db")
+        if os.path.exists(src_path):
+            src = sqlite3.connect(src_path, timeout=30)
+            dst = sqlite3.connect(copy)
+            src.backup(dst)
+            dst.close()
+            src.close()
+        KibbleDatabase(copy)  # runs the schema migrations on the copy
+        con = sqlite3.connect(copy)
+        res = con.execute("PRAGMA quick_check").fetchone()
+        con.close()
+        if not res or res[0] != "ok":
+            errors.append("DB quick_check on copy: %r" % (res,))
+except Exception as exc:
+    errors.append("DB migration on copy: %r" % (exc,))
+if errors:
+    print("SMOKE FAIL")
+    for e in errors:
+        print("  - " + e)
+    sys.exit(1)
+print("SMOKE OK: %d modules imported, config parsed, DB migrations + quick_check ok on a copy" % n)
+'
+
+# Runs inside the container: token is read from the container env and fed to curl on stdin (never on argv)
+SELFTEST_SH='printf "X-Webhook-Token: %s\n" "${WEBHOOK_SECRET:-}" | curl -sS -m 150 -H @- -w "\nHTTP_CODE:%{http_code}\n" "http://127.0.0.1:${WEBHOOK_LISTEN_PORT:-8080}/selftest?camera=$1" 2>&1 || true'
+HEALTH_SH='curl -fsS -m 5 "http://127.0.0.1:${WEBHOOK_LISTEN_PORT:-8080}/health" 2>/dev/null || true'
+
+# --------------------------------------------------------------------------- small helpers
+dc() { $DOCKER_BIN compose "$@"; }
+docker_enabled() { [ "${PP_SKIP_DOCKER:-0}" != "1" ]; }
+container_running() {
+    [ "$($DOCKER_BIN inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || true)" = "true" ]
+}
+
+wait_for_healthy() {
+    STATUS="starting"
+    for _ in $(seq 1 "$HEALTH_RETRIES"); do
+        STATUS="$($DOCKER_BIN inspect -f '{{.State.Health.Status}}' "$CONTAINER" 2>/dev/null || echo missing)"
+        [ "$STATUS" = "healthy" ] && return 0
+        sleep "$HEALTH_SLEEP"
+    done
+    return 1
+}
+
+wait_for_running_log() {
+    local logs
+    for _ in $(seq 1 "$LOG_RETRIES"); do
+        logs="$(dc logs --no-log-prefix "$SERVICE" 2>/dev/null || true)"
+        case "$logs" in *"$RUNNING_MARKER"*) return 0 ;; esac
+        sleep "$HEALTH_SLEEP"
+    done
+    return 1
+}
+
+# Prints the guard verdict line (ok|block|unknown<TAB>wait<TAB>message)
+guard_eval() {
+    if ! docker_enabled; then
+        printf 'ok\t0\tdocker skipped\n'
+        return 0
+    fi
+    if ! container_running; then
+        printf 'ok\t0\twatchdog container is not running (nothing to interrupt)\n'
+        return 0
+    fi
+    local hj logs_tmp verdict
+    hj="$($DOCKER_BIN compose exec -T "$SERVICE" sh -c "$HEALTH_SH" 2>/dev/null || true)"
+    logs_tmp="$(mktemp "${TMPDIR:-/tmp}/pp-logs.XXXXXX")"
+    case "$hj" in
+        *'"busy"'*) ;;
+        *) dc logs --no-log-prefix "$SERVICE" > "$logs_tmp" 2>/dev/null || true ;;  # older watchdog: read its logs
+    esac
+    verdict="$(PP_HEALTH_JSON="$hj" python3 "$PYHELP" guard "$DIR/.env" "$logs_tmp" 2>/dev/null || printf 'unknown\t0\tguard helper failed\n')"
+    rm -f "$logs_tmp"
+    printf '%s\n' "$verdict"
+}
+
+# Initial meal-window / busy guard (before anything changes). Exits 2 when refused.
+meal_guard_initial() {
+    [ "$FORCE" -eq 1 ] && { warn "--force: skipping the meal-window / busy guard"; return 0; }
+    local verdict state msg
+    verdict="$(guard_eval)"
+    state="$(printf '%s' "$verdict" | cut -f1)"
+    msg="$(printf '%s' "$verdict" | cut -f3-)"
+    case "$state" in
+        ok)
+            echo "   Meal guard: OK — ${msg}" ;;
+        block)
+            err "Not updating now: ${msg}."
+            err "Restarting the container now would lose that meal's verification. Try again later, or use --force."
+            RESULT="refused"; RESULT_DETAIL="$msg"
+            exit 2 ;;
+        *)
+            warn "Meal guard: ${msg}."
+            if [ -t 0 ] && [ -t 1 ]; then
+                local ans=""
+                read -r -p "   Make sure no meal is due in the next ~15 minutes. Proceed anyway? (y/N) " ans || true
+                case "$ans" in y*|Y*) GUARD_CONFIRMED=1 ;; *) RESULT="refused"; RESULT_DETAIL="$msg"; exit 2 ;; esac
+            else
+                err "Cannot confirm it is safe to restart (non-interactive). Re-run interactively or with --force."
+                RESULT="refused"; RESULT_DETAIL="$msg"
+                exit 2
+            fi ;;
+    esac
+}
+
+# Re-check right before switching containers (the build may have taken a while): wait out a meal window.
+meal_guard_before_switch() {
+    [ "$FORCE" -eq 1 ] && return 0
+    local waited=0 verdict state wait_s msg
+    while :; do
+        verdict="$(guard_eval)"
+        state="$(printf '%s' "$verdict" | cut -f1)"
+        wait_s="$(printf '%s' "$verdict" | cut -f2)"
+        msg="$(printf '%s' "$verdict" | cut -f3-)"
+        case "$state" in
+            ok) return 0 ;;
+            unknown) [ "${GUARD_CONFIRMED:-0}" -eq 1 ] && return 0
+                     err "Meal guard: ${msg}"; return 1 ;;
+        esac
+        if [ $((waited + wait_s)) -gt "$GUARD_WAIT_MAX" ]; then
+            err "Meal guard: ${msg}; not waiting longer than $((GUARD_WAIT_MAX / 60)) min."
+            return 1
+        fi
+        warn "Meal guard: ${msg}. Waiting before switching containers (old version keeps running)..."
+        local step="$GUARD_POLL"
+        [ "$wait_s" -lt "$step" ] && step="$wait_s"
+        [ "$step" -lt 1 ] && step=1
+        sleep "$step"
+        waited=$((waited + step))
+    done
+}
+
+# Runs /selftest in the running container; prints the summary; returns the helper's exit code
+run_selftest() {
+    local cam="$1" raw rc=5 i
+    raw="$(mktemp "${TMPDIR:-/tmp}/pp-selftest.XXXXXX")"
+    for i in $(seq 1 "$SELFTEST_RETRIES"); do
+        $DOCKER_BIN compose exec -T "$SERVICE" sh -c "$SELFTEST_SH" sh "$cam" > "$raw" 2>&1 || true
+        rc=0
+        python3 "$PYHELP" selftest-summary "$raw" || rc=$?
+        [ "$rc" -ne 3 ] && break
+        [ "$i" -lt "$SELFTEST_RETRIES" ] && sleep "$SELFTEST_SLEEP"
+    done
+    rm -f "$raw"
+    return "$rc"
+}
+
+append_history() {
+    local hist="$DIR/data/update-history.log" line
+    line="$(date '+%Y-%m-%d %H:%M:%S %z') | ${OLD_BRANCH}@${OLD_COMMIT} -> ${NEW_BRANCH:-$OLD_BRANCH}@${NEW_COMMIT:-$OLD_COMMIT} | ${RESULT} | ${RESULT_DETAIL:-}"
+    if { printf '%s\n' "$line" >> "$hist"; } 2>/dev/null; then
+        return 0
+    fi
+    if [ -n "$SUDO" ] && sudo -n true 2>/dev/null; then
+        printf '%s\n' "$line" | sudo -n tee -a "$hist" >/dev/null 2>&1 || true
+    fi
+}
+
+# --------------------------------------------------------------------------- labels (operator ground truth)
+restore_one_label() {
+    local bkp="$1" dst="$2" rel="$3"
+    if [ -n "$bkp" ] && [ -f "$bkp" ]; then
+        mkdir -p "$(dirname "$dst")"
+        if [ -f "$dst" ] && ! cmp -s "$bkp" "$dst"; then
+            cp -p "$dst" "${dst}.upstream"
+            warn "Local ${rel} differed from upstream; preserved local labels (upstream saved to ${rel}.upstream)"
+        fi
+        cp -p "$bkp" "$dst"
+        rm -f "$bkp"
+    fi
+}
+
+restore_labels() {
+    restore_one_label "${LABELS_BACKUP:-}" "$LABELS_FILE" "captures/review_clips/training_labels.json"
+    LABELS_BACKUP=""
+    restore_one_label "${ARCHIVE_LABELS_BACKUP:-}" "$ARCHIVE_LABELS_FILE" "captures/archive/training_labels.json"
+    ARCHIVE_LABELS_BACKUP=""
+}
+
+clean_tracked_labels() {
+    # Only while the local copies are held in LABELS_BACKUP: lets git switch commits without a conflict
+    [ -n "${LABELS_BACKUP:-}" ] && git checkout -- "captures/review_clips/training_labels.json" 2>/dev/null || true
+    [ -n "${ARCHIVE_LABELS_BACKUP:-}" ] && git checkout -- "captures/archive/training_labels.json" 2>/dev/null || true
+}
+
+# --------------------------------------------------------------------------- lock / exit
+acquire_lock() {
+    if [ -d "$DIR/.git" ]; then LOCK_DIR="$DIR/.git/update-pp.lock"; else LOCK_DIR="${TMPDIR:-/tmp}/pp-update-$(id -u).lock"; fi
+    if mkdir "$LOCK_DIR" 2>/dev/null; then
+        echo $$ > "$LOCK_DIR/pid"
+        return 0
+    fi
+    local pid
+    pid="$(cat "$LOCK_DIR/pid" 2>/dev/null || true)"
+    if [ "$pid" = "$$" ]; then return 0; fi   # we re-executed ourselves (same PID)
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        err "Another update-pp is already running (pid ${pid})."
+        RESULT="refused"; RESULT_DETAIL="another update-pp running"
+        LOCK_DIR=""
+        exit 1
+    fi
+    echo $$ > "$LOCK_DIR/pid"   # stale lock from a killed run
+}
+
+on_exit() {
+    local rc=$?
+    restore_labels
+    if [ "$HISTORY" -eq 1 ]; then
+        [ "$RESULT" = "error" ] && RESULT_DETAIL="exit code ${rc}${RESULT_DETAIL:+; $RESULT_DETAIL}"
+        append_history
+    fi
+    [ -n "${LOCK_DIR:-}" ] && rm -rf "$LOCK_DIR"
+    [ -n "${PYHELP:-}" ] && rm -f "$PYHELP"
+    return "$rc"
+}
+
+# --------------------------------------------------------------------------- git
+restore_git() {
+    [ "$OLD_COMMIT_FULL" = "unknown" ] && return 0
+    [ "$(git rev-parse HEAD 2>/dev/null || true)" = "$OLD_COMMIT_FULL" ] && \
+        [ "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)" = "$OLD_BRANCH" ] && return 0
+    clean_tracked_labels
+    if [ "$OLD_BRANCH" != "HEAD" ] && [ "$OLD_BRANCH" != "unknown" ]; then
+        git checkout -q -B "$OLD_BRANCH" "$OLD_COMMIT_FULL"
+    else
+        git checkout -q --detach "$OLD_COMMIT_FULL"
+    fi
+}
+
+git_phase() {
+    if [ "$OLD_BRANCH" = "HEAD" ] || [ "$OLD_BRANCH" = "unknown" ]; then
+        if [ -z "$TARGET_BRANCH" ] && [ "$USE_LATEST" -eq 0 ]; then
+            err "Refusing to update from detached HEAD (${OLD_COMMIT}) without an explicit target branch."
+            err "Re-run with: update-pp --branch v0.6   or   update-pp --latest"
+            exit 1
+        fi
+    fi
+
+    # Ignore operator-writable directories (captures/, data/, exports/) when checking for dirty code files
+    local dirty
+    dirty="$(git status --porcelain --untracked-files=no -- . ':!captures/' ':!data/' ':!exports/' 2>/dev/null || true)"
+    if [ -n "$dirty" ]; then
+        err "Working tree has uncommitted changes to tracked code files:"
+        printf '%s\n' "$dirty" >&2
+        err "Run 'git stash' or 'git commit' on code changes first, then re-run update-pp."
+        exit 1
+    fi
+
+    # Stash operator ground-truth labels aside before git operations; restored at the very end
+    if [ -z "$LABELS_BACKUP" ] && [ -f "$LABELS_FILE" ]; then
+        LABELS_BACKUP="$(mktemp "${TMPDIR:-/tmp}/pp-labels.XXXXXX")"
+        cp -p "$LABELS_FILE" "$LABELS_BACKUP"
+    fi
+    if [ -z "$ARCHIVE_LABELS_BACKUP" ] && [ -f "$ARCHIVE_LABELS_FILE" ]; then
+        ARCHIVE_LABELS_BACKUP="$(mktemp "${TMPDIR:-/tmp}/pp-arch-labels.XXXXXX")"
+        cp -p "$ARCHIVE_LABELS_FILE" "$ARCHIVE_LABELS_BACKUP"
+    fi
+    git checkout -- "captures/review_clips/training_labels.json" 2>/dev/null || true
+    git checkout -- "captures/archive/training_labels.json" 2>/dev/null || true
+
+    say "Fetching all remote branches from origin..."
+    git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
+
+    if [ -z "$TARGET_BRANCH" ]; then
+        if [ "$USE_LATEST" -eq 1 ]; then
+            TARGET_BRANCH="$(python3 "$PYHELP" latest-branch)"
+            if [ "$TARGET_BRANCH" = "HEAD" ] || [ -z "$TARGET_BRANCH" ]; then
+                err "Could not find any v* version branch to select for --latest from detached HEAD."
+                exit 1
+            fi
+            warn "--latest specified; selected highest version branch '${TARGET_BRANCH}'"
+        else
+            TARGET_BRANCH="$OLD_BRANCH"
+        fi
+    fi
+
+    say "Updating branch '${TARGET_BRANCH}' (--ff-only)..."
+    local ok=1
+    if [ "$TARGET_BRANCH" != "$OLD_BRANCH" ]; then
+        if git show-ref --verify --quiet "refs/heads/${TARGET_BRANCH}"; then
+            git checkout "$TARGET_BRANCH" || ok=0
+        elif git show-ref --verify --quiet "refs/remotes/origin/${TARGET_BRANCH}"; then
+            git checkout -b "$TARGET_BRANCH" --track "origin/${TARGET_BRANCH}" || ok=0
+        else
+            git checkout "$TARGET_BRANCH" || ok=0
+        fi
+    fi
+    if [ "$ok" -eq 1 ]; then
+        if git show-ref --verify --quiet "refs/remotes/origin/${TARGET_BRANCH}"; then
+            git pull --ff-only origin "$TARGET_BRANCH" || ok=0
+        else
+            git pull --ff-only || ok=0
+        fi
+    fi
+    if [ "$ok" -ne 1 ]; then
+        err "git checkout/pull failed; restoring ${OLD_BRANCH} @ ${OLD_COMMIT}. Nothing else was changed."
+        restore_git || true
+        RESULT="git_failed"
+        exit 1
+    fi
+}
+
+# Re-run the NEWLY pulled update-pp so the rest of the update always uses the new logic
+maybe_reexec() {
+    [ -n "${PP_REEXEC:-}" ] && return 0
+    [ -f "$DIR/update-pp" ] || return 0
+    cmp -s "$DIR/update-pp" "$SCRIPT_PATH" && return 0
+    say "update-pp itself changed; continuing with the new version..."
+    rm -f "$PYHELP"
+    export PP_REEXEC=1 PP_OLD_BRANCH="$OLD_BRANCH" PP_OLD_COMMIT_FULL="$OLD_COMMIT_FULL" \
+        PP_LABELS_BACKUP="$LABELS_BACKUP" PP_ARCHIVE_LABELS_BACKUP="$ARCHIVE_LABELS_BACKUP" \
+        PP_GUARD_CONFIRMED="${GUARD_CONFIRMED:-0}" POOR_PUPPY_DIR="$DIR"
+    exec bash "$DIR/update-pp" ${ORIG_ARGS[@]+"${ORIG_ARGS[@]}"}
+}
+
+# --------------------------------------------------------------------------- docker
+retag_old_image() {
+    # Point the old compose image name back at the pre-update image (so a later plain `docker compose up -d`,
+    # e.g. pp-settings "Save & apply", can never pick up a half-tested new image)
+    if [ -n "$ROLLBACK_IMAGE" ] && [ -n "$OLD_IMAGE_NAME" ]; then
+        $DOCKER_BIN tag "$ROLLBACK_IMAGE" "$OLD_IMAGE_NAME" 2>/dev/null || true
+    fi
+}
+
+abort_before_switch() {
+    err "$1"
+    restore_git || err "Could not restore git automatically: git checkout -B ${OLD_BRANCH} ${OLD_COMMIT}"
+    retag_old_image
+    err "Nothing was switched: the previous version (${OLD_BRANCH} @ ${OLD_COMMIT}) is still running."
+    exit 1
+}
+
+tag_rollback_image() {
+    ROLLBACK_IMAGE=""
+    OLD_IMAGE_NAME=""
+    local img name
+    img="$($DOCKER_BIN inspect -f '{{.Image}}' "$CONTAINER" 2>/dev/null || true)"
+    name="$($DOCKER_BIN inspect -f '{{.Config.Image}}' "$CONTAINER" 2>/dev/null || true)"
+    case "$img" in
+        sha256:*)
+            if $DOCKER_BIN tag "$img" "${ROLLBACK_REPO}:rollback-${OLD_COMMIT}" && \
+               $DOCKER_BIN tag "$img" "${ROLLBACK_REPO}:rollback"; then
+                ROLLBACK_IMAGE="${ROLLBACK_REPO}:rollback-${OLD_COMMIT}"
+                case "$name" in ""|sha256:*) ;; *) OLD_IMAGE_NAME="$name" ;; esac
+                echo "   Rollback image: ${ROLLBACK_IMAGE} (${img:7:12})"
+            fi ;;
+        *) warn "No existing watchdog container found; a rollback would rebuild the previous commit instead." ;;
+    esac
+}
+
+prune_rollback_tags() {
+    # Keep the two newest rollback-<commit> tags (plus :rollback); untagging never deletes a running image
+    $DOCKER_BIN image ls "${ROLLBACK_REPO}" --format '{{.Tag}}' 2>/dev/null | grep '^rollback-' | tail -n +3 | \
+        while read -r t; do $DOCKER_BIN rmi "${ROLLBACK_REPO}:${t}" >/dev/null 2>&1 || true; done || true
+}
+
+backup_db() {
+    local db="$DIR/data/kibble_history.db" out runner=""
+    if { [ -e "$DIR/data/backups" ] && [ ! -w "$DIR/data/backups" ]; } || [ ! -w "$DIR/data" ]; then
+        runner="$SUDO"
+    fi
+    out="$($runner python3 "$PYHELP" backup "$db" "$DIR/data/backups" "$OLD_COMMIT" "$BACKUP_KEEP" 2>&1)" || {
+        err "Database backup failed: ${out}"
+        return 1
+    }
+    case "$out" in
+        OK\ *) BACKUP_FILE="${out#OK }"; echo "   DB backup: ${BACKUP_FILE#"$DIR"/}" ;;
+        *) echo "   DB backup: ${out#SKIP }" ;;
+    esac
+}
+
+rollback() {
+    local why="$1"
+    err "Update check failed: ${why}"
+    if [ "$NO_ROLLBACK" -eq 1 ]; then
+        RESULT="failed_no_rollback"; RESULT_DETAIL="$why"
+        err "--no-rollback: leaving ${NEW_BRANCH} @ ${NEW_COMMIT} running. Last 30 log lines:"
+        dc logs --tail 30 "$SERVICE" || true
+        # Keep local labels in .local_stash when upstream changed them, so the manual git checkout below can't
+        # conflict; the next update-pp run restores them automatically
+        if [ -n "${LABELS_BACKUP:-}" ] && [ -f "$LABELS_BACKUP" ] && ! git diff --quiet "$OLD_COMMIT_FULL" HEAD -- "captures/review_clips/training_labels.json" 2>/dev/null; then
+            cp -p "$LABELS_BACKUP" "$LABELS_STASH"; rm -f "$LABELS_BACKUP"; LABELS_BACKUP=""
+            warn "Local training_labels.json stashed at ${LABELS_STASH} (auto-restored by the next update-pp run)"
+        fi
+        if [ -n "${ARCHIVE_LABELS_BACKUP:-}" ] && [ -f "$ARCHIVE_LABELS_BACKUP" ] && ! git diff --quiet "$OLD_COMMIT_FULL" HEAD -- "captures/archive/training_labels.json" 2>/dev/null; then
+            cp -p "$ARCHIVE_LABELS_BACKUP" "$ARCHIVE_LABELS_STASH"; rm -f "$ARCHIVE_LABELS_BACKUP"; ARCHIVE_LABELS_BACKUP=""
+        fi
+        err "Manual rollback to ${OLD_BRANCH} @ ${OLD_COMMIT}:"
+        err "  cd ${DIR} && git checkout -B ${OLD_BRANCH} ${OLD_COMMIT} && update-pp --no-pull"
+        if [ -n "$ROLLBACK_IMAGE" ] && [ -n "$OLD_IMAGE_NAME" ]; then
+            err "  (faster, no rebuild: after the git checkout run  docker tag ${ROLLBACK_IMAGE} ${OLD_IMAGE_NAME} && docker compose up -d --no-build --force-recreate)"
+        fi
+        exit 1
+    fi
+    dc logs --tail 30 "$SERVICE" 2>/dev/null | sed 's/^/   | /' || true
+    warn "Rolling back to ${OLD_BRANCH} @ ${OLD_COMMIT}..."
+    restore_git || err "git restore failed — run: git checkout -B ${OLD_BRANCH} ${OLD_COMMIT}"
+    local up_ok=1
+    if [ -n "$ROLLBACK_IMAGE" ] && [ -n "$OLD_IMAGE_NAME" ]; then
+        retag_old_image
+        dc up -d --no-build --force-recreate || up_ok=0
+    else
+        dc up -d --build --force-recreate || up_ok=0
+    fi
+    if [ "$up_ok" -eq 1 ] && wait_for_healthy; then
+        echo "   Rolled-back container is ${STATUS}. Self-test of the previous version:"
+        run_selftest "$CAMERA_FLAG" || true
+        say "Rollback to ${OLD_COMMIT} succeeded (container status: ${STATUS})."
+        RESULT="rolled_back"; RESULT_DETAIL="$why"
+    else
+        err "Rollback container status is '${STATUS}'. Check: docker compose -f ${DIR}/docker-compose.yml logs --tail 50"
+        RESULT="rollback_failed"; RESULT_DETAIL="$why"
+    fi
+    echo "   Branch:     ${OLD_BRANCH} (attempted ${NEW_BRANCH} @ ${NEW_COMMIT})"
+    echo "   Commit:     ${OLD_COMMIT}"
+    echo "   Preserved:  .env, data/, captures/, tuya_session.json, exports/ (left untouched)"
+    exit 1
+}
+
+docker_phase() {
+    say "Preparing rollback point..."
+    tag_rollback_image
+
+    say "Building the new image (the current watchdog keeps running)..."
+    dc build || { RESULT="build_failed"; abort_before_switch "docker compose build failed."; }
+
+    say "Offline smoke test of the new image (no cloud; DB checked on a copy)..."
+    # Explicit --name: never collides with the running container's fixed container_name
+    dc run --rm --no-deps -T --name "poor-puppy-smoke-$$" --entrypoint python "$SERVICE" -c "$SMOKE_PY" || {
+        RESULT="smoke_failed"; abort_before_switch "Smoke test of the new image failed."
+    }
+
+    meal_guard_before_switch || { RESULT="refused"; RESULT_DETAIL="meal window before switch"; abort_before_switch "Meal window: not switching now."; }
+
+    say "Backing up the database..."
+    backup_db || { RESULT="backup_failed"; abort_before_switch "Database backup failed."; }
+
+    say "Switching to the new version..."
+    dc up -d --no-build --force-recreate || rollback "docker compose up failed"
+
+    say "Waiting for container healthcheck (up to ~$((HEALTH_RETRIES * HEALTH_SLEEP))s)..."
+    wait_for_healthy || rollback "container status is '${STATUS}' after the update"
+    wait_for_running_log || rollback "the daemon never logged '${RUNNING_MARKER}'"
+
+    say "Connection self-test (existing session only, no feed${CAMERA_FLAG:+, camera snapshot})..."
+    local rc=0
+    run_selftest "$CAMERA_FLAG" || rc=$?
+    case "$rc" in
+        0) SELFTEST_RESULT="pass" ;;
+        1) SELFTEST_RESULT="warn" ;;
+        4) SELFTEST_RESULT="n/a (target version has no /selftest)" ;;
+        3) rollback "self-test stayed busy (a verification kept running)" ;;
+        *) rollback "connection self-test failed" ;;
+    esac
+    prune_rollback_tags
+}
+
+# --------------------------------------------------------------------------- --status / --selftest
+do_status() {
+    local branch commit cdate newest behind
+    branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
+    commit="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+    cdate="$(git log -1 --format='%cd' --date=format:'%Y-%m-%d %H:%M' 2>/dev/null || echo '?')"
+    say "Poor Puppy status"
+    echo "   Install dir:   ${DIR}"
+    echo "   Branch:        ${branch}"
+    echo "   Commit:        ${commit} (${cdate})"
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+        if git fetch -q origin '+refs/heads/*:refs/remotes/origin/*' --prune 2>/dev/null; then
+            newest="$(python3 "$PYHELP" latest-branch remote 2>/dev/null || true)"
+            echo "   Newest branch: ${newest:-none} (origin)"
+            if [ -n "$newest" ] && [ "$newest" != "$branch" ] && \
+               [ "$(printf '%s\n%s\n' "$branch" "$newest" | sort -V | tail -n 1)" = "$newest" ]; then
+                echo "   Update:        ⬆️  ${newest} is available — run: update-pp --latest"
+            elif git show-ref --verify --quiet "refs/remotes/origin/${branch}"; then
+                behind="$(git rev-list --count "HEAD..origin/${branch}" 2>/dev/null || echo 0)"
+                if [ "${behind:-0}" -gt 0 ]; then
+                    echo "   Update:        ⬆️  ${behind} new commit(s) on ${branch} — run: update-pp"
+                else
+                    echo "   Update:        ✅ up to date"
+                fi
+            fi
+        else
+            echo "   Update:        (could not reach origin to check)"
+        fi
+    fi
+    if docker_enabled; then
+        local health img created rb verdict
+        health="$($DOCKER_BIN inspect -f '{{.State.Health.Status}}' "$CONTAINER" 2>/dev/null || echo 'not running')"
+        img="$($DOCKER_BIN inspect -f '{{.Image}}' "$CONTAINER" 2>/dev/null || true)"
+        created="$($DOCKER_BIN image inspect -f '{{.Created}}' "$img" 2>/dev/null | cut -c1-19 | tr T ' ' || true)"
+        echo "   Container:     ${CONTAINER}: ${health}"
+        echo "   Image:         ${img:7:12} (built ${created:-?})"
+        rb="$($DOCKER_BIN image inspect -f '{{.Created}}' "${ROLLBACK_REPO}:rollback" 2>/dev/null | cut -c1-19 | tr T ' ' || true)"
+        [ -n "$rb" ] && echo "   Rollback img:  ${ROLLBACK_REPO}:rollback (built ${rb})"
+        verdict="$(guard_eval)"
+        echo "   Next meal:     $(printf '%s' "$verdict" | cut -f3-) — update guard: $(printf '%s' "$verdict" | cut -f1)"
+    else
+        echo "   Container:     (docker skipped)"
+    fi
+    echo "   Update history (data/update-history.log, newest last):"
+    if [ -f "$DIR/data/update-history.log" ]; then
+        tail -n 5 "$DIR/data/update-history.log" | sed 's/^/     /'
+    else
+        echo "     (no updates recorded yet)"
+    fi
+}
+
+do_selftest_cmd() {
+    if ! docker_enabled; then echo "   (docker skipped)"; return 0; fi
+    container_running || { err "The watchdog container is not running."; return 1; }
+    say "Connection self-test (existing session only, no feed${CAMERA_FLAG:+, camera snapshot})..."
+    local rc=0
+    run_selftest "$CAMERA_FLAG" || rc=$?
+    [ "$rc" -le 1 ] || [ "$rc" -eq 4 ]
+}
+
+# --------------------------------------------------------------------------- main
+main() {
+    ORIG_ARGS=("$@")
+    TARGET_BRANCH=""; USE_LATEST=0; NO_PULL=0; FORCE=0; NO_ROLLBACK=0; CAMERA_FLAG=1; ACTION="update"
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --branch)
+                [ $# -ge 2 ] || { echo "Error: --branch requires a branch name" >&2; exit 1; }
+                TARGET_BRANCH="$2"; shift 2 ;;
+            --latest) USE_LATEST=1; shift ;;
+            --no-pull) NO_PULL=1; shift ;;
+            --force) FORCE=1; shift ;;
+            --no-rollback) NO_ROLLBACK=1; shift ;;
+            --rollback-on-fail) shift ;;
+            --no-camera-check) CAMERA_FLAG=""; shift ;;
+            --status) ACTION="status"; shift ;;
+            --selftest) ACTION="selftest"; shift ;;
+            -h|--help) usage; exit 0 ;;
+            *) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
+        esac
+    done
+    if [ -n "$TARGET_BRANCH" ] && [ "$USE_LATEST" -eq 1 ]; then
+        echo "✗ Error: cannot specify both --branch and --latest." >&2
+        exit 1
+    fi
+
+    SCRIPT_PATH="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$0")"
+    DIR="${POOR_PUPPY_DIR:-$(cd "$(dirname "$SCRIPT_PATH")" && pwd)}"
+    cd "$DIR"
+
+    SUDO=""
+    [ "$(id -u)" -ne 0 ] && SUDO="sudo"
+    DOCKER_BIN="${PP_DOCKER_BIN:-}"
+    [ -z "$DOCKER_BIN" ] && DOCKER_BIN="${SUDO:+$SUDO }docker"
+    HEALTH_RETRIES="${PP_HEALTH_RETRIES:-70}"
+    HEALTH_SLEEP="${PP_HEALTH_SLEEP:-3}"
+    LOG_RETRIES="${PP_LOG_RETRIES:-40}"
+    SELFTEST_RETRIES="${PP_SELFTEST_RETRIES:-6}"
+    SELFTEST_SLEEP="${PP_SELFTEST_SLEEP:-20}"
+    GUARD_WAIT_MAX="${PP_GUARD_WAIT_MAX:-1200}"
+    GUARD_POLL="${PP_GUARD_POLL:-30}"
+    BACKUP_KEEP="${PP_BACKUP_KEEP:-5}"
+    GUARD_CONFIRMED="${PP_GUARD_CONFIRMED:-0}"
+    RESULT="error"; RESULT_DETAIL=""; HISTORY=0; LOCK_DIR=""; PYHELP=""
+    ROLLBACK_IMAGE=""; OLD_IMAGE_NAME=""; BACKUP_FILE=""; SELFTEST_RESULT="skipped (docker skipped)"; STATUS=""
+
+    LABELS_FILE="$DIR/captures/review_clips/training_labels.json"
+    LABELS_STASH="$DIR/captures/review_clips/training_labels.json.local_stash"
+    ARCHIVE_LABELS_FILE="$DIR/captures/archive/training_labels.json"
+    ARCHIVE_LABELS_STASH="$DIR/captures/archive/training_labels.json.local_stash"
+    LABELS_BACKUP="${PP_LABELS_BACKUP:-}"
+    ARCHIVE_LABELS_BACKUP="${PP_ARCHIVE_LABELS_BACKUP:-}"
+    trap on_exit EXIT
+    write_py_helper
+
+    # 1. Pre-flight check: must be an existing installed tree ---------------------
+    if [ ! -f "$DIR/.env" ] || [ ! -d "$DIR/data" ] || [ ! -d "$DIR/captures" ]; then
+        err "Refusing to run: missing .env, data/, or captures/ in ${DIR}."
+        err "This looks like a fresh clone — run ./install_ubuntu.sh first."
+        exit 1
+    fi
+    case "$ACTION" in
+        status) do_status; exit 0 ;;
+        selftest) do_selftest_cmd; exit $? ;;
+    esac
+
+    if [ -n "${PP_REEXEC:-}" ]; then
+        OLD_BRANCH="${PP_OLD_BRANCH:-unknown}"
+        OLD_COMMIT_FULL="${PP_OLD_COMMIT_FULL:-unknown}"
+    else
+        OLD_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
+        OLD_COMMIT_FULL="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+    fi
+    OLD_COMMIT="$(git rev-parse --short "$OLD_COMMIT_FULL" 2>/dev/null || echo unknown)"
+    NEW_BRANCH="$OLD_BRANCH"; NEW_COMMIT="$OLD_COMMIT"
+    acquire_lock
+    HISTORY=1
+
+    # If a prior failed update stashed labels pending manual rollback, pick them up now
+    if [ -f "$LABELS_STASH" ] && [ -z "$LABELS_BACKUP" ]; then
+        LABELS_BACKUP="$(mktemp "${TMPDIR:-/tmp}/pp-labels.XXXXXX")"
+        cp -p "$LABELS_STASH" "$LABELS_BACKUP"
+        rm -f "$LABELS_STASH"
+    fi
+    if [ -f "$ARCHIVE_LABELS_STASH" ] && [ -z "$ARCHIVE_LABELS_BACKUP" ]; then
+        ARCHIVE_LABELS_BACKUP="$(mktemp "${TMPDIR:-/tmp}/pp-arch-labels.XXXXXX")"
+        cp -p "$ARCHIVE_LABELS_STASH" "$ARCHIVE_LABELS_BACKUP"
+        rm -f "$ARCHIVE_LABELS_STASH"
+    fi
+
+    # 2. Meal-window / busy guard, then git fetch + checkout + ff-only pull ----------
+    if [ -z "${PP_REEXEC:-}" ]; then
+        meal_guard_initial
+        if [ "$NO_PULL" -eq 0 ]; then
+            git_phase
+            if [ "$(git rev-parse HEAD 2>/dev/null || true)" = "$OLD_COMMIT_FULL" ]; then
+                say "Already up to date (${OLD_BRANCH} @ ${OLD_COMMIT}) — nothing to do, the watchdog was not restarted."
+                echo "   (To force a rebuild + restart anyway: update-pp --no-pull)"
+                RESULT="up_to_date"
+                exit 0
+            fi
+            maybe_reexec
+        else
+            say "Skipping git pull (--no-pull)..."
+        fi
+    fi
+    NEW_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
+    NEW_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+
+    # 3. Append any newly introduced .env.example keys without touching existing values
+    python3 "$PYHELP" env-backfill "$DIR/.env" "$DIR/.env.example"
+    chmod 600 "$DIR/.env" 2>/dev/null || true
+
+    # 4. Refresh /usr/local/bin wrappers & volume ownership when running on VPS ---
+    CAN_ROOT=0
+    if [ "$(id -u)" -eq 0 ]; then
+        CAN_ROOT=1
+    elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+        CAN_ROOT=1
+    fi
+    if docker_enabled && [ -z "${PP_DOCKER_BIN:-}" ] && [ -d /usr/local/bin ] && { [ -w /usr/local/bin ] || [ "$CAN_ROOT" -eq 1 ]; }; then
+        # Ensure SQLite data/, top-level captures/review_clips dirs, and session file are owned by container uid 1000
+        # without recursively walking thousands of capture media files on every update
+        $SUDO chown -R 1000:1000 "$DIR/data" "$DIR/tuya_session.json" 2>/dev/null || true
+        $SUDO chown 1000:1000 "$DIR/captures" "$DIR/captures/review_clips" 2>/dev/null || true
+        $SUDO tee /usr/local/bin/pp-settings >/dev/null <<EOF
+#!/bin/sh
+POOR_PUPPY_DIR="${DIR}" exec python3 "${DIR}/scripts/pp_settings.py" "\$@"
+EOF
+        $SUDO chmod 755 /usr/local/bin/pp-settings
+        $SUDO tee /usr/local/bin/update-pp >/dev/null <<EOF
+#!/bin/sh
+POOR_PUPPY_DIR="${DIR}" exec "${DIR}/update-pp" "\$@"
+EOF
+        $SUDO chmod 755 /usr/local/bin/update-pp
+    fi
+
+    # 5. Build, smoke test, back up, switch, verify (auto-rollback on failure) ----
+    if docker_enabled; then
+        docker_phase
+    else
+        STATUS="healthy (docker skipped)"
+    fi
+
+    # Restore stashed operator labels now that git pull and verification succeeded
+    restore_labels
+    if docker_enabled && [ -z "${PP_DOCKER_BIN:-}" ] && [ -f "$LABELS_FILE" ] && [ "$CAN_ROOT" -eq 1 ]; then
+        $SUDO chown 1000:1000 "$LABELS_FILE" 2>/dev/null || true
+    fi
+
+    # 6. Summary ------------------------------------------------------------------
+    RESULT="success"; RESULT_DETAIL="health ${STATUS}; selftest ${SELFTEST_RESULT}"
+    say "Update complete!"
+    echo "   Branch:     ${OLD_BRANCH} -> ${NEW_BRANCH}"
+    echo "   Commit:     ${OLD_COMMIT} -> ${NEW_COMMIT}"
+    echo "   Health:     ✅ ${STATUS}"
+    echo "   Self-test:  ${SELFTEST_RESULT}"
+    [ -n "$BACKUP_FILE" ] && echo "   DB backup:  ${BACKUP_FILE#"$DIR"/}"
+    [ -n "$ROLLBACK_IMAGE" ] && echo "   Rollback:   ${ROLLBACK_IMAGE} kept (previous version image)"
+    echo "   Preserved:  .env, data/, captures/, tuya_session.json, exports/ (left untouched)"
+}
+
+main "$@"
+exit $?

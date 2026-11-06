@@ -1,0 +1,1524 @@
+{
+  "2026-10-30T14:42:09|2": {
+    "event_id": 2,
+    "event_type": "manual_dispense_verify",
+    "portions": 1,
+    "system": {
+      "food_dispensed": "yes",
+      "clog": "no",
+      "ir_actual": "no",
+      "dog_actual": "no",
+      "food_visible_after": null
+    },
+    "food_dispensed": "yes",
+    "clog": "no",
+    "ir_actual": "no",
+    "dog_actual": "no",
+    "food_visible_after": "cant_tell",
+    "notes": "",
+    "labeled_at": "2026-11-05T19:42:29"
+  },
+  "2026-10-30T16:01:17|3": {
+    "event_id": 3,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "food_dispensed": "yes",
+      "problem": "none",
+      "ir_actual": "no",
+      "dog_in_view": null,
+      "dog_at_bowl": "yes",
+      "food_visible_after": null
+    },
+    "food_dispensed": "yes",
+    "problem": "none",
+    "ir_actual": "no",
+    "dog_in_view": "yes",
+    "dog_at_bowl": "no",
+    "food_visible_after": "yes",
+    "notes": "",
+    "segments": [
+      {
+        "type": "dog_in_view",
+        "start": 0,
+        "end": 82.6
+      },
+      {
+        "type": "motor",
+        "start": 33.07,
+        "end": 79.46
+      },
+      {
+        "type": "kibble",
+        "start": 34.04,
+        "end": 55.71
+      },
+      {
+        "type": "kibble",
+        "start": 56.92,
+        "end": 79.75
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 82.6,
+    "labeled_at": "2026-11-05T20:03:20"
+  },
+  "2026-10-30T19:01:01|4": {
+    "event_id": 4,
+    "event_type": "scheduled_verify",
+    "portions": 17,
+    "system": {
+      "food_dispensed": "yes",
+      "problem": "none",
+      "ir_actual": "yes",
+      "dog_in_view": null,
+      "dog_at_bowl": "no",
+      "food_visible_after": null
+    },
+    "food_dispensed": "yes",
+    "problem": "none",
+    "ir_actual": "yes",
+    "dog_in_view": "no",
+    "dog_at_bowl": "no",
+    "food_visible_after": "yes",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 31.35,
+        "end": 71.18
+      },
+      {
+        "type": "kibble",
+        "start": 32.99,
+        "end": 41.19
+      },
+      {
+        "type": "kibble",
+        "start": 44.19,
+        "end": 46.93
+      },
+      {
+        "type": "kibble",
+        "start": 47.38,
+        "end": 49.16
+      },
+      {
+        "type": "kibble",
+        "start": 50.65,
+        "end": 53.16
+      },
+      {
+        "type": "kibble",
+        "start": 54.07,
+        "end": 71.05
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 74.4,
+    "labeled_at": "2026-11-05T20:06:05"
+  },
+  "2026-10-31T07:01:16|5": {
+    "event_id": 5,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "not at bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 36.53,
+        "end": 85.2
+      },
+      {
+        "type": "kibble",
+        "start": 36.93,
+        "end": 50.67
+      },
+      {
+        "type": "kibble",
+        "start": 52.15,
+        "end": 85.62
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 88.52,
+    "labeled_at": "2026-11-05T20:15:48"
+  },
+  "2026-10-31T11:01:14|6": {
+    "event_id": 6,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "colour",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "daylight",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 34.92,
+        "end": 81.81,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 35.22,
+        "end": 41.51,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 42.66,
+        "end": 50.94
+      },
+      {
+        "type": "kibble",
+        "start": 51.46,
+        "end": 68.23,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 69.1,
+        "end": 74.75,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 75.64,
+        "end": 77.92,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 78.79,
+        "end": 81.81,
+        "auto": true
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 84.6,
+    "labeled_at": "2026-11-05T20:16:40"
+  },
+  "2026-10-31T16:01:27|7": {
+    "event_id": 7,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "colour",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "daylight",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 34.13,
+        "end": 81.6,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 34.43,
+        "end": 40.86,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 42.9,
+        "end": 60.3,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 61.1,
+        "end": 65.82,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 66.72,
+        "end": 74.8,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 75.83,
+        "end": 81.6,
+        "auto": true
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 84.56,
+    "labeled_at": "2026-11-05T20:17:14"
+  },
+  "2026-10-31T19:01:08|8": {
+    "event_id": 8,
+    "event_type": "scheduled_verify",
+    "portions": 17,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "in_view",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "dog_in_view",
+        "start": 0,
+        "end": 46.12
+      },
+      {
+        "type": "motor",
+        "start": 19.29,
+        "end": 45.55,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 19.59,
+        "end": 32.16,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 33.33,
+        "end": 39.65,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 40.55,
+        "end": 45.55,
+        "auto": true
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 46.12,
+    "labeled_at": "2026-11-05T20:19:15"
+  },
+  "2026-11-01T07:01:09|9": {
+    "event_id": 9,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 32.48,
+        "end": 79.46,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 32.78,
+        "end": 46.61,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 47.65,
+        "end": 55.94,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 56.87,
+        "end": 58.71,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 59.68,
+        "end": 65.22,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 67.47,
+        "end": 69.44,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 70.82,
+        "end": 76.99,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 78.99,
+        "end": 79.46,
+        "auto": true
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 82.6,
+    "labeled_at": "2026-11-05T20:19:36"
+  },
+  "2026-11-01T11:01:10|10": {
+    "event_id": 10,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "colour",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "daylight",
+    "food_visible_after": "yes",
+    "food_dispensed": "partial",
+    "problem": "jam",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 32.31,
+        "end": 79.38,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 32.61,
+        "end": 52
+      },
+      {
+        "type": "jam",
+        "start": 51.42,
+        "end": 69.28
+      },
+      {
+        "type": "kibble",
+        "start": 69.29,
+        "end": 79.43
+      }
+    ],
+    "problem_start_sec": 51.42,
+    "media_duration_sec": 82.56,
+    "labeled_at": "2026-11-05T20:21:12"
+  },
+  "2026-11-01T16:01:10|11": {
+    "event_id": 11,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "partial",
+    "problem": "jam",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 32.06,
+        "end": 79.84,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 32.36,
+        "end": 37.05
+      },
+      {
+        "type": "jam",
+        "start": 36.68,
+        "end": 75.8
+      },
+      {
+        "type": "kibble",
+        "start": 75.66,
+        "end": 80.4
+      }
+    ],
+    "problem_start_sec": 36.68,
+    "media_duration_sec": 82.44,
+    "labeled_at": "2026-11-05T20:22:32"
+  },
+  "2026-11-01T19:01:00|12": {
+    "event_id": 12,
+    "event_type": "scheduled_verify",
+    "portions": 17,
+    "system": {
+      "puppy": "not at bowl",
+      "lighting": "ir",
+      "food_visible_after": "yes",
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "cant_tell",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 30.86,
+        "end": 71.34,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 31.16,
+        "end": 45.02,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 45.9,
+        "end": 49.01,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 50.02,
+        "end": 61.48,
+        "auto": true
+      },
+      {
+        "type": "jam",
+        "start": 61.63,
+        "end": 64.32
+      },
+      {
+        "type": "kibble",
+        "start": 64.61,
+        "end": 67.39
+      },
+      {
+        "type": "kibble",
+        "start": 68.07,
+        "end": 71.34
+      }
+    ],
+    "problem_start_sec": 61.63,
+    "media_duration_sec": 74.32,
+    "labeled_at": "2026-11-05T20:23:51"
+  },
+  "2026-11-02T07:01:13|13": {
+    "event_id": 13,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "not at bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "cant_tell",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 35.67,
+        "end": 83.38,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 36.1,
+        "end": 45.47
+      },
+      {
+        "type": "kibble",
+        "start": 46.18,
+        "end": 49.82
+      },
+      {
+        "type": "kibble",
+        "start": 50.81,
+        "end": 52.02,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 55.07,
+        "end": 67.9
+      },
+      {
+        "type": "kibble",
+        "start": 72.08,
+        "end": 74.55
+      },
+      {
+        "type": "kibble",
+        "start": 74.73,
+        "end": 83.38,
+        "auto": true
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 86.6,
+    "labeled_at": "2026-11-05T20:26:37"
+  },
+  "2026-11-02T11:01:15|14": {
+    "event_id": 14,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "colour",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "in_view",
+    "lighting": "daylight",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 34.58,
+        "end": 81.41,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 34.88,
+        "end": 60.14,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 60.94,
+        "end": 64.54,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 65.77,
+        "end": 73.85,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 74.68,
+        "end": 78.3,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 79.56,
+        "end": 81.41,
+        "auto": true
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 84.48,
+    "labeled_at": "2026-11-05T20:27:13"
+  },
+  "2026-11-02T16:01:12|15": {
+    "event_id": 15,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 35.23,
+        "end": 81.91,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 35.53,
+        "end": 38.21,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 39.55,
+        "end": 47.42
+      },
+      {
+        "type": "kibble",
+        "start": 49.28,
+        "end": 64.99,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 66.31,
+        "end": 67.29,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 69.2,
+        "end": 76.83,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 77.64,
+        "end": 81.91,
+        "auto": true
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 84.52,
+    "labeled_at": "2026-11-05T20:28:01"
+  },
+  "2026-11-02T18:23:11|16": {
+    "event_id": 16,
+    "event_type": "manual_dispense_verify",
+    "portions": 1,
+    "system": {
+      "puppy": "not at bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "no",
+      "problem": "problem"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "no",
+    "problem": "cant_tell",
+    "notes": "nothing happened",
+    "segments": [],
+    "problem_start_sec": null,
+    "media_duration_sec": 3.84,
+    "labeled_at": "2026-11-05T20:28:51"
+  },
+  "2026-11-02T18:24:02|17": {
+    "event_id": 17,
+    "event_type": "manual_dispense_verify",
+    "portions": 5,
+    "system": {
+      "puppy": "not at bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "no",
+      "problem": "problem"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "no",
+    "problem": "cant_tell",
+    "notes": "short vid, nothing happened",
+    "segments": [],
+    "problem_start_sec": null,
+    "media_duration_sec": 2.4,
+    "labeled_at": "2026-11-05T20:29:20"
+  },
+  "2026-11-02T19:01:27|18": {
+    "event_id": 18,
+    "event_type": "scheduled_verify",
+    "portions": 17,
+    "system": {
+      "puppy": "not at bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 33.47,
+        "end": 70.59,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 33.77,
+        "end": 55.44,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 56.46,
+        "end": 65.09,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 65.96,
+        "end": 70.97
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 72.72,
+    "labeled_at": "2026-11-05T20:30:05"
+  },
+  "2026-11-03T07:01:11|19": {
+    "event_id": 19,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "jam",
+    "notes": "slightly jam or empty at end cant tell which but still kibble falls at the end of hte clip",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 32.5,
+        "end": 80.14,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 32.8,
+        "end": 49.27,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 50.57,
+        "end": 51.66,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 52.98,
+        "end": 54.12,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 55.3,
+        "end": 56.16,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 57.72,
+        "end": 65.66,
+        "auto": true
+      },
+      {
+        "type": "jam",
+        "start": 65.64,
+        "end": 80.03
+      },
+      {
+        "type": "kibble",
+        "start": 73.78,
+        "end": 80.14
+      }
+    ],
+    "problem_start_sec": 65.64,
+    "media_duration_sec": 83.48,
+    "labeled_at": "2026-11-05T20:31:51"
+  },
+  "2026-11-03T11:01:22|20": {
+    "event_id": 20,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "not at bowl",
+      "lighting": "ir",
+      "food_visible_after": "yes",
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "in_view",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "jam",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 32.3,
+        "end": 53.89,
+        "auto": true
+      },
+      {
+        "type": "jam",
+        "start": 32.33,
+        "end": 41.75
+      },
+      {
+        "type": "kibble",
+        "start": 42.01,
+        "end": 53.7
+      }
+    ],
+    "problem_start_sec": 32.33,
+    "media_duration_sec": 57.72,
+    "labeled_at": "2026-11-05T20:33:57"
+  },
+  "2026-11-03T16:01:14|21": {
+    "event_id": 21,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "not at bowl",
+      "lighting": "ir",
+      "food_visible_after": "yes",
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "at_bowl",
+    "lighting": "glare",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "glare at first then IR",
+    "segments": [
+      {
+        "type": "dog_in_view",
+        "start": 0,
+        "end": 82.4
+      },
+      {
+        "type": "motor",
+        "start": 31.68,
+        "end": 78.53,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 31.98,
+        "end": 41.22,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 42.25,
+        "end": 48.27,
+        "auto": true
+      },
+      {
+        "type": "dog_at_bowl",
+        "start": 44.24,
+        "end": 82.4
+      },
+      {
+        "type": "kibble",
+        "start": 49.57,
+        "end": 63.27,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 64.37,
+        "end": 78.69
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 82.4,
+    "labeled_at": "2026-11-05T20:36:07"
+  },
+  "2026-11-03T19:00:59|22": {
+    "event_id": 22,
+    "event_type": "scheduled_verify",
+    "portions": 17,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 32.59,
+        "end": 71.87,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 32.89,
+        "end": 59.69,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 60.8,
+        "end": 61.92,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 62.87,
+        "end": 72.03
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 74.6,
+    "labeled_at": "2026-11-05T20:36:45"
+  },
+  "2026-11-04T07:01:13|23": {
+    "event_id": 23,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "not at bowl",
+      "lighting": "ir",
+      "food_visible_after": "yes",
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 35.07,
+        "end": 82.36,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 35.37,
+        "end": 61.07,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 62.46,
+        "end": 82.36,
+        "auto": true
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 85.52,
+    "labeled_at": "2026-11-05T20:37:18"
+  },
+  "2026-11-04T11:01:15|24": {
+    "event_id": 24,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "colour",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "in_view",
+    "lighting": "daylight",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "dog_in_view",
+        "start": 0,
+        "end": 9.27
+      },
+      {
+        "type": "motor",
+        "start": 34.54,
+        "end": 81.79,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 38.12,
+        "end": 46.22
+      },
+      {
+        "type": "kibble",
+        "start": 47.67,
+        "end": 51.05,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 52.08,
+        "end": 53.3,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 54.64,
+        "end": 55.49,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 56.91,
+        "end": 57.94,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 59.18,
+        "end": 59.81,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 60.65,
+        "end": 65.3,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 66.31,
+        "end": 81.79,
+        "auto": true
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 84.48,
+    "labeled_at": "2026-11-05T20:38:31"
+  },
+  "2026-11-04T16:01:16|25": {
+    "event_id": 25,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "not at bowl",
+      "lighting": "ir",
+      "food_visible_after": "yes",
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "in_view",
+    "lighting": "glare",
+    "food_visible_after": "no",
+    "food_dispensed": "partial",
+    "problem": "jam",
+    "notes": "",
+    "segments": [
+      {
+        "type": "dog_in_view",
+        "start": 0,
+        "end": 26.48
+      },
+      {
+        "type": "motor",
+        "start": 9.07,
+        "end": 18.28
+      },
+      {
+        "type": "kibble",
+        "start": 9.11,
+        "end": 11.27
+      },
+      {
+        "type": "jam",
+        "start": 11.33,
+        "end": 18.34
+      }
+    ],
+    "problem_start_sec": 11.33,
+    "media_duration_sec": 26.48,
+    "labeled_at": "2026-11-05T20:40:23"
+  },
+  "2026-11-04T19:01:08|26": {
+    "event_id": 26,
+    "event_type": "scheduled_verify",
+    "portions": 17,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "at_bowl",
+    "lighting": "ir",
+    "food_visible_after": "no",
+    "food_dispensed": "yes",
+    "problem": "jam",
+    "notes": "",
+    "segments": [
+      {
+        "type": "dog_in_view",
+        "start": 0,
+        "end": 80.24
+      },
+      {
+        "type": "motor",
+        "start": 34.87,
+        "end": 77.11,
+        "auto": true
+      },
+      {
+        "type": "jam",
+        "start": 34.98,
+        "end": 43.4
+      },
+      {
+        "type": "kibble",
+        "start": 43.6,
+        "end": 49.42
+      },
+      {
+        "type": "dog_at_bowl",
+        "start": 45.46,
+        "end": 80.13
+      },
+      {
+        "type": "kibble",
+        "start": 50.93,
+        "end": 54.97,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 55.79,
+        "end": 59.38,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 60.78,
+        "end": 61.54,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 62.56,
+        "end": 64.62,
+        "auto": true
+      },
+      {
+        "type": "jam",
+        "start": 64.94,
+        "end": 77.11
+      }
+    ],
+    "problem_start_sec": 34.98,
+    "media_duration_sec": 80.24,
+    "labeled_at": "2026-11-05T20:45:06"
+  },
+  "2026-11-05T07:01:13|27": {
+    "event_id": 27,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "not_visible",
+    "lighting": "ir",
+    "food_visible_after": "yes",
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "motor",
+        "start": 32.83,
+        "end": 79.41,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 33.13,
+        "end": 52.81,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 54.38,
+        "end": 57.37,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 58.41,
+        "end": 59.86,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 61.22,
+        "end": 70.29,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 73.41,
+        "end": 79.41,
+        "auto": true
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 84.72,
+    "labeled_at": "2026-11-05T20:45:56"
+  },
+  "2026-11-05T11:01:12|28": {
+    "event_id": 28,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "not at bowl",
+      "lighting": "ir",
+      "food_visible_after": "yes",
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "at_bowl",
+    "lighting": "ir",
+    "food_visible_after": null,
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "dog_in_view",
+        "start": 0,
+        "end": 82.32
+      },
+      {
+        "type": "motor",
+        "start": 33.19,
+        "end": 80.01,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 33.49,
+        "end": 80.01,
+        "auto": true
+      },
+      {
+        "type": "dog_at_bowl",
+        "start": 56.33,
+        "end": 62.24
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 82.32,
+    "labeled_at": "2026-11-05T20:47:11"
+  },
+  "2026-11-05T16:01:09|29": {
+    "event_id": 29,
+    "event_type": "scheduled_verify",
+    "portions": 20,
+    "system": {
+      "puppy": "not at bowl",
+      "lighting": "ir",
+      "food_visible_after": "yes",
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "at_bowl",
+    "lighting": "ir",
+    "food_visible_after": null,
+    "food_dispensed": "yes",
+    "problem": "none",
+    "notes": "",
+    "segments": [
+      {
+        "type": "dog_in_view",
+        "start": 0,
+        "end": 79.76
+      },
+      {
+        "type": "motor",
+        "start": 31.32,
+        "end": 77.47,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 31.62,
+        "end": 48.13,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 49.12,
+        "end": 52.23,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 53.06,
+        "end": 74.67,
+        "auto": true
+      },
+      {
+        "type": "dog_at_bowl",
+        "start": 57.24,
+        "end": 79.76
+      },
+      {
+        "type": "kibble",
+        "start": 75.81,
+        "end": 77.47
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 79.76,
+    "labeled_at": "2026-11-05T20:48:04"
+  },
+  "2026-11-05T19:01:00|30": {
+    "event_id": 30,
+    "event_type": "scheduled_verify",
+    "portions": 17,
+    "system": {
+      "puppy": "at_bowl",
+      "lighting": "ir",
+      "food_visible_after": null,
+      "food_dispensed": "yes",
+      "problem": "none"
+    },
+    "puppy": "in_view",
+    "lighting": "ir",
+    "food_visible_after": "no",
+    "food_dispensed": "yes",
+    "problem": "cant_tell",
+    "notes": "",
+    "segments": [
+      {
+        "type": "dog_in_view",
+        "start": 0,
+        "end": 75.19
+      },
+      {
+        "type": "motor",
+        "start": 31.73,
+        "end": 72.18,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 32.03,
+        "end": 43.54,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 44.41,
+        "end": 45.5,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 46.61,
+        "end": 48.29,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 49.71,
+        "end": 51.29,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 52.22,
+        "end": 57.59,
+        "auto": true
+      },
+      {
+        "type": "kibble",
+        "start": 58.56,
+        "end": 72.18,
+        "auto": true
+      }
+    ],
+    "problem_start_sec": null,
+    "media_duration_sec": 75.44,
+    "labeled_at": "2026-11-05T20:48:50"
+  }
+}

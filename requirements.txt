@@ -1,0 +1,16 @@
+# Core dependencies for Molly & Cody (and.mollycody.app01) Feeder Watchdog & WebRTC Streamer
+requests>=2.31.0
+tinytuya>=1.15.0
+paho-mqtt>=1.6.1,<2.0.0
+cryptography>=42.0.0
+aiortc>=1.9.0
+av>=12.0.0
+numpy>=1.26.0
+pillow>=10.2.0
+opencv-python-headless>=4.9.0.80
+python-dotenv>=1.0.1
+schedule>=1.2.1
+tuya-device-sharing-sdk>=0.2.15
+qrcode>=8.0
+# Neural TTS for feeder speaker alerts (espeak-ng in the image is the offline fallback)
+edge-tts>=7.0.0

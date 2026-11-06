@@ -1,0 +1,546 @@
+[
+  {
+    "clip_id": "20261030_084740_feed_8p",
+    "updated_at": "2026-10-30T09:00:17",
+    "title": "Live Feed (8 Portions) @ 20261030_084740",
+    "dispense_triggered": true,
+    "user_reviewed": true,
+    "feed_success": true,
+    "is_clog": true,
+    "heard_motor": true,
+    "heard_kibble": true,
+    "saw_kibble_accumulate": true,
+    "bowl_had_food_before": true,
+    "dog_at_bowl": false,
+    "notes": "Intentionally kept my finger in the top to clog the gear but it doesn't really clog up til around 18 sec in the motor sounds changes",
+    "metrics": {
+      "capture": {
+        "video_ok": true,
+        "audio_ok": true,
+        "before_ok": true,
+        "after_ok": true,
+        "video_frames": 617,
+        "audio_frames": 998,
+        "audio_rate": 8000,
+        "recording_extended_sec": 0.0,
+        "motor_window_sec": [
+          0.73,
+          21.48
+        ]
+      },
+      "pre_weight_g": 10,
+      "post_weight_g": 10,
+      "feed_abnormal": 1,
+      "audio": {
+        "motor_detected": true,
+        "kibble_impact_peaks": 223,
+        "kibble_dispensed_audio": true,
+        "motor_energy_db": 37.05,
+        "impact_energy_db": 27.88,
+        "diagnosis": "Motor churned (20.7s) AND kibble heard hitting the bowl (113 tings, 5.3/s; 223 loud spikes).",
+        "motor_duration_sec": 20.72,
+        "kibble_rate_per_sec": 10.76,
+        "ting_count": 113,
+        "ting_rate_per_sec": 5.3,
+        "ml_prob_dispensed": null
+      },
+      "visual": {
+        "before_fill_ratio": 0.0,
+        "after_fill_ratio": 0.0,
+        "fill_delta_ratio": 0.0,
+        "frame_diff_ratio": 0.4529,
+        "bowl_empty": false,
+        "food_increased": false,
+        "food_present_cv": true,
+        "food_present_llm": null,
+        "llm_reasoning": "",
+        "diagnosis": "Bowl already had food (0.0%), but amount did not noticeably increase (delta=+0.0%, diff=45.3%).",
+        "is_infrared_mode": false,
+        "dog_at_bowl_detected": false
+      }
+    },
+    "files": {
+      "mp4": "/clips/20261030_084740_feed_8p.mp4",
+      "wav": "/clips/20261030_084740_feed_8p.wav",
+      "before_jpg": "/clips/20261030_084740_feed_8p_before_bright.jpg",
+      "after_jpg": "/clips/20261030_084740_feed_8p_after_bright.jpg",
+      "annotated_jpg": "/clips/20261030_084740_feed_8p_annotated.jpg"
+    }
+  },
+  {
+    "clip_id": "20261030_084635_feed_10p",
+    "updated_at": "2026-10-30T09:00:17",
+    "title": "Live Feed (10 Portions) @ 20261030_084635",
+    "dispense_triggered": true,
+    "user_reviewed": true,
+    "feed_success": true,
+    "is_clog": false,
+    "heard_motor": true,
+    "heard_kibble": true,
+    "saw_kibble_accumulate": true,
+    "bowl_had_food_before": true,
+    "dog_at_bowl": false,
+    "notes": "The end of the vid you hear food being messed with at the top like as if I was filling the top",
+    "metrics": {
+      "capture": {
+        "video_ok": true,
+        "audio_ok": true,
+        "before_ok": true,
+        "after_ok": true,
+        "video_frames": 837,
+        "audio_frames": 1373,
+        "audio_rate": 8000,
+        "recording_extended_sec": 5.0,
+        "motor_window_sec": [
+          1.34,
+          24.25
+        ]
+      },
+      "pre_weight_g": 10,
+      "post_weight_g": 10,
+      "feed_abnormal": 1,
+      "audio": {
+        "motor_detected": true,
+        "kibble_impact_peaks": 374,
+        "kibble_dispensed_audio": true,
+        "motor_energy_db": 38.55,
+        "impact_energy_db": 20.53,
+        "diagnosis": "Motor churned (23.2s) AND kibble heard hitting the bowl (186 tings, 7.8/s; 374 loud spikes).",
+        "motor_duration_sec": 23.21,
+        "kibble_rate_per_sec": 16.11,
+        "ting_count": 186,
+        "ting_rate_per_sec": 7.81,
+        "ml_prob_dispensed": null
+      },
+      "visual": {
+        "before_fill_ratio": 0.0,
+        "after_fill_ratio": 0.0,
+        "fill_delta_ratio": 0.0,
+        "frame_diff_ratio": 0.6504,
+        "bowl_empty": false,
+        "food_increased": false,
+        "food_present_cv": true,
+        "food_present_llm": null,
+        "llm_reasoning": "",
+        "diagnosis": "Bowl already had food (0.0%), but amount did not noticeably increase (delta=+0.0%, diff=65.0%).",
+        "is_infrared_mode": false,
+        "dog_at_bowl_detected": false
+      }
+    },
+    "files": {
+      "mp4": "/clips/20261030_084635_feed_10p.mp4",
+      "wav": "/clips/20261030_084635_feed_10p.wav",
+      "before_jpg": "/clips/20261030_084635_feed_10p_before_bright.jpg",
+      "after_jpg": "/clips/20261030_084635_feed_10p_after_bright.jpg",
+      "annotated_jpg": "/clips/20261030_084635_feed_10p_annotated.jpg"
+    }
+  },
+  {
+    "clip_id": "20261030_084428_feed_10p",
+    "updated_at": "2026-10-30T09:00:17",
+    "title": "Live Feed (10 Portions) @ 20261030_084428",
+    "dispense_triggered": true,
+    "user_reviewed": true,
+    "feed_success": false,
+    "is_clog": true,
+    "heard_motor": true,
+    "heard_kibble": true,
+    "saw_kibble_accumulate": false,
+    "bowl_had_food_before": true,
+    "dog_at_bowl": true,
+    "notes": "Intentionally clogged especially around the 10-second mark you can hear it when it's unable to push anything through the shoot eventually it does pull out a little bit at the end but there's a good portion of that video that does contain the motor grinding and nothing coming out because it can't but at the very very end you will hear kibble hitting the bull",
+    "metrics": {
+      "capture": {
+        "video_ok": true,
+        "audio_ok": true,
+        "before_ok": true,
+        "after_ok": true,
+        "video_frames": 723,
+        "audio_frames": 1197,
+        "audio_rate": 8000,
+        "recording_extended_sec": 0.0,
+        "motor_window_sec": [
+          0.27,
+          25.36
+        ]
+      },
+      "pre_weight_g": 10,
+      "post_weight_g": 10,
+      "feed_abnormal": 1,
+      "audio": {
+        "motor_detected": true,
+        "kibble_impact_peaks": 133,
+        "kibble_dispensed_audio": false,
+        "motor_energy_db": 34.53,
+        "impact_energy_db": 17.41,
+        "diagnosis": "CLOG / EMPTY HOPPER SOUND DETECTED: Motor churned for 24.4s (+34.5 dB) without the kibble 'ting' (2.3 tings/s < 4.3).",
+        "motor_duration_sec": 24.37,
+        "kibble_rate_per_sec": 5.46,
+        "ting_count": 57,
+        "ting_rate_per_sec": 2.28,
+        "ml_prob_dispensed": null
+      },
+      "visual": {
+        "before_fill_ratio": 0.2015,
+        "after_fill_ratio": 0.0,
+        "fill_delta_ratio": -0.2015,
+        "frame_diff_ratio": 0.9481,
+        "bowl_empty": false,
+        "food_increased": false,
+        "food_present_cv": false,
+        "food_present_llm": null,
+        "llm_reasoning": "",
+        "diagnosis": "Puppy detected eating at the bowl (fill=0.0%, diff=94.8%).",
+        "is_infrared_mode": false,
+        "dog_at_bowl_detected": true
+      }
+    },
+    "files": {
+      "mp4": "/clips/20261030_084428_feed_10p.mp4",
+      "wav": "/clips/20261030_084428_feed_10p.wav",
+      "before_jpg": "/clips/20261030_084428_feed_10p_before_bright.jpg",
+      "after_jpg": "/clips/20261030_084428_feed_10p_after_bright.jpg",
+      "annotated_jpg": "/clips/20261030_084428_feed_10p_annotated.jpg"
+    }
+  },
+  {
+    "clip_id": "20261030_084332_feed_1p",
+    "updated_at": "2026-10-30T09:00:17",
+    "title": "Live Feed (1 Portion) @ 20261030_084332",
+    "dispense_triggered": true,
+    "user_reviewed": true,
+    "feed_success": true,
+    "is_clog": false,
+    "heard_motor": true,
+    "heard_kibble": true,
+    "saw_kibble_accumulate": true,
+    "bowl_had_food_before": true,
+    "dog_at_bowl": true,
+    "notes": "",
+    "metrics": {
+      "capture": {
+        "video_ok": true,
+        "audio_ok": true,
+        "before_ok": true,
+        "after_ok": true,
+        "video_frames": 127,
+        "audio_frames": 318,
+        "audio_rate": 8000,
+        "recording_extended_sec": 0.0,
+        "motor_window_sec": [
+          0.06,
+          12.69
+        ]
+      },
+      "pre_weight_g": 10,
+      "post_weight_g": 10,
+      "feed_abnormal": 1,
+      "audio": {
+        "motor_detected": true,
+        "kibble_impact_peaks": 41,
+        "kibble_dispensed_audio": true,
+        "motor_energy_db": 30.33,
+        "impact_energy_db": 27.0,
+        "diagnosis": "Motor churned (12.7s) AND kibble heard hitting the bowl (69 tings, 5.4/s; 41 loud spikes).",
+        "motor_duration_sec": 12.69,
+        "kibble_rate_per_sec": 3.23,
+        "ting_count": 69,
+        "ting_rate_per_sec": 5.43,
+        "ml_prob_dispensed": null
+      },
+      "visual": {
+        "before_fill_ratio": 0.0,
+        "after_fill_ratio": 0.0,
+        "fill_delta_ratio": 0.0,
+        "frame_diff_ratio": 0.9826,
+        "bowl_empty": false,
+        "food_increased": false,
+        "food_present_cv": false,
+        "food_present_llm": null,
+        "llm_reasoning": "",
+        "diagnosis": "Puppy detected eating at the bowl (IR Night Vision) (fill=0.0%, diff=98.3%).",
+        "is_infrared_mode": true,
+        "dog_at_bowl_detected": true
+      }
+    },
+    "files": {
+      "mp4": "/clips/20261030_084332_feed_1p.mp4",
+      "wav": "/clips/20261030_084332_feed_1p.wav",
+      "before_jpg": "/clips/20261030_084332_feed_1p_before_bright.jpg",
+      "after_jpg": "/clips/20261030_084332_feed_1p_after_bright.jpg",
+      "annotated_jpg": "/clips/20261030_084332_feed_1p_annotated.jpg"
+    }
+  },
+  {
+    "clip_id": "20261030_084135_feed_10p",
+    "updated_at": "2026-10-30T09:00:17",
+    "title": "Live Feed (10 Portions) @ 20261030_084135",
+    "dispense_triggered": true,
+    "user_reviewed": true,
+    "feed_success": true,
+    "is_clog": false,
+    "heard_motor": true,
+    "heard_kibble": true,
+    "saw_kibble_accumulate": true,
+    "bowl_had_food_before": true,
+    "dog_at_bowl": false,
+    "notes": "",
+    "metrics": {
+      "capture": {
+        "video_ok": true,
+        "audio_ok": true,
+        "before_ok": true,
+        "after_ok": true,
+        "video_frames": 748,
+        "audio_frames": 1197,
+        "audio_rate": 8000,
+        "recording_extended_sec": 0.0,
+        "motor_window_sec": [
+          1.15,
+          24.38
+        ]
+      },
+      "pre_weight_g": 10,
+      "post_weight_g": 10,
+      "feed_abnormal": 1,
+      "audio": {
+        "motor_detected": true,
+        "kibble_impact_peaks": 261,
+        "kibble_dispensed_audio": true,
+        "motor_energy_db": 37.19,
+        "impact_energy_db": 22.52,
+        "diagnosis": "Motor churned (23.2s) AND kibble heard hitting the bowl (160 tings, 6.7/s; 261 loud spikes).",
+        "motor_duration_sec": 23.22,
+        "kibble_rate_per_sec": 11.24,
+        "ting_count": 160,
+        "ting_rate_per_sec": 6.72,
+        "ml_prob_dispensed": null
+      },
+      "visual": {
+        "before_fill_ratio": 0.0,
+        "after_fill_ratio": 0.0,
+        "fill_delta_ratio": 0.0,
+        "frame_diff_ratio": 0.7347,
+        "bowl_empty": false,
+        "food_increased": false,
+        "food_present_cv": true,
+        "food_present_llm": null,
+        "llm_reasoning": "",
+        "diagnosis": "Bowl already had food (0.0%), but amount did not noticeably increase (delta=+0.0%, diff=73.5%).",
+        "is_infrared_mode": false,
+        "dog_at_bowl_detected": false
+      }
+    },
+    "files": {
+      "mp4": "/clips/20261030_084135_feed_10p.mp4",
+      "wav": "/clips/20261030_084135_feed_10p.wav",
+      "before_jpg": "/clips/20261030_084135_feed_10p_before_bright.jpg",
+      "after_jpg": "/clips/20261030_084135_feed_10p_after_bright.jpg",
+      "annotated_jpg": "/clips/20261030_084135_feed_10p_annotated.jpg"
+    }
+  },
+  {
+    "clip_id": "20261030_084009_feed_6p",
+    "updated_at": "2026-10-30T09:00:17",
+    "title": "Live Feed (6 Portions) @ 20261030_084009",
+    "dispense_triggered": true,
+    "user_reviewed": true,
+    "feed_success": true,
+    "is_clog": false,
+    "heard_motor": true,
+    "heard_kibble": true,
+    "saw_kibble_accumulate": true,
+    "bowl_had_food_before": false,
+    "dog_at_bowl": false,
+    "notes": "I turn the lights on as it was feeding the dog so you can see it change from IR to regular light",
+    "metrics": {
+      "capture": {
+        "video_ok": true,
+        "audio_ok": true,
+        "before_ok": true,
+        "after_ok": true,
+        "video_frames": 392,
+        "audio_frames": 797,
+        "audio_rate": 8000,
+        "recording_extended_sec": 0.0,
+        "motor_window_sec": [
+          1.01,
+          15.11
+        ]
+      },
+      "pre_weight_g": 10,
+      "post_weight_g": 10,
+      "feed_abnormal": 1,
+      "audio": {
+        "motor_detected": true,
+        "kibble_impact_peaks": 189,
+        "kibble_dispensed_audio": true,
+        "motor_energy_db": 37.96,
+        "impact_energy_db": 21.32,
+        "diagnosis": "Motor churned (14.0s) AND kibble heard hitting the bowl (131 tings, 8.9/s; 189 loud spikes).",
+        "motor_duration_sec": 14.04,
+        "kibble_rate_per_sec": 13.46,
+        "ting_count": 131,
+        "ting_rate_per_sec": 8.95,
+        "ml_prob_dispensed": null
+      },
+      "visual": {
+        "before_fill_ratio": 0.0,
+        "after_fill_ratio": 0.0,
+        "fill_delta_ratio": 0.0,
+        "frame_diff_ratio": 0.9933,
+        "bowl_empty": false,
+        "food_increased": false,
+        "food_present_cv": true,
+        "food_present_llm": null,
+        "llm_reasoning": "",
+        "diagnosis": "Bowl already had food (0.0%), but amount did not noticeably increase (delta=+0.0%, diff=99.3%).",
+        "is_infrared_mode": false,
+        "dog_at_bowl_detected": false
+      }
+    },
+    "files": {
+      "mp4": "/clips/20261030_084009_feed_6p.mp4",
+      "wav": "/clips/20261030_084009_feed_6p.wav",
+      "before_jpg": "/clips/20261030_084009_feed_6p_before_bright.jpg",
+      "after_jpg": "/clips/20261030_084009_feed_6p_after_bright.jpg",
+      "annotated_jpg": "/clips/20261030_084009_feed_6p_annotated.jpg"
+    }
+  },
+  {
+    "clip_id": "20261030_083910_feed_1p",
+    "updated_at": "2026-10-30T09:00:17",
+    "title": "Live Feed (1 Portion) @ 20261030_083910",
+    "dispense_triggered": true,
+    "user_reviewed": true,
+    "feed_success": true,
+    "is_clog": false,
+    "heard_motor": true,
+    "heard_kibble": true,
+    "saw_kibble_accumulate": true,
+    "bowl_had_food_before": false,
+    "dog_at_bowl": true,
+    "notes": "",
+    "metrics": {
+      "capture": {
+        "video_ok": true,
+        "audio_ok": true,
+        "before_ok": true,
+        "after_ok": true,
+        "video_frames": 89,
+        "audio_frames": 339,
+        "audio_rate": 8000,
+        "recording_extended_sec": 0.0,
+        "motor_window_sec": [
+          1.84,
+          12.49
+        ]
+      },
+      "pre_weight_g": 10,
+      "post_weight_g": 10,
+      "feed_abnormal": 1,
+      "audio": {
+        "motor_detected": true,
+        "kibble_impact_peaks": 3,
+        "kibble_dispensed_audio": true,
+        "motor_energy_db": 24.73,
+        "impact_energy_db": 34.59,
+        "diagnosis": "Motor churned (5.4s) AND kibble heard hitting the bowl (29 tings, 4.8/s; 3 loud spikes).",
+        "motor_duration_sec": 5.44,
+        "kibble_rate_per_sec": 0.55,
+        "ting_count": 29,
+        "ting_rate_per_sec": 4.8,
+        "ml_prob_dispensed": null
+      },
+      "visual": {
+        "before_fill_ratio": 0.0,
+        "after_fill_ratio": 0.0,
+        "fill_delta_ratio": 0.0,
+        "frame_diff_ratio": 0.034,
+        "bowl_empty": false,
+        "food_increased": false,
+        "food_present_cv": false,
+        "food_present_llm": null,
+        "llm_reasoning": "",
+        "diagnosis": "IR night vision: no clear new kibble visible (fill level is not measurable at night); verdict relies on the audio check.",
+        "is_infrared_mode": true,
+        "dog_at_bowl_detected": false
+      }
+    },
+    "files": {
+      "mp4": "/clips/20261030_083910_feed_1p.mp4",
+      "wav": "/clips/20261030_083910_feed_1p.wav",
+      "before_jpg": "/clips/20261030_083910_feed_1p_before_bright.jpg",
+      "after_jpg": "/clips/20261030_083910_feed_1p_after_bright.jpg",
+      "annotated_jpg": "/clips/20261030_083910_feed_1p_annotated.jpg"
+    }
+  },
+  {
+    "clip_id": "20261030_083549_feed_3p",
+    "updated_at": "2026-10-30T09:00:17",
+    "title": "Live Feed (3 Portions) @ 20261030_083549",
+    "dispense_triggered": true,
+    "user_reviewed": true,
+    "feed_success": false,
+    "is_clog": false,
+    "heard_motor": true,
+    "heard_kibble": true,
+    "saw_kibble_accumulate": true,
+    "bowl_had_food_before": false,
+    "dog_at_bowl": true,
+    "notes": "the delay from dispense & record to feed coming out was rather long but the video still got it so.. ",
+    "metrics": {
+      "capture": {
+        "video_ok": true,
+        "audio_ok": true,
+        "before_ok": true,
+        "after_ok": true,
+        "video_frames": 168,
+        "audio_frames": 421,
+        "audio_rate": 8000,
+        "recording_extended_sec": 0.0,
+        "motor_window_sec": [
+          1.94,
+          12.19
+        ]
+      },
+      "pre_weight_g": 10,
+      "post_weight_g": 10,
+      "feed_abnormal": 1,
+      "audio": {
+        "motor_detected": true,
+        "kibble_impact_peaks": 200,
+        "kibble_dispensed_audio": true,
+        "motor_energy_db": 39.94,
+        "impact_energy_db": 16.79,
+        "diagnosis": "Motor churned (7.7s) AND kibble heard hitting the bowl (74 tings, 8.9/s; 200 loud spikes).",
+        "motor_duration_sec": 7.67,
+        "kibble_rate_per_sec": 26.08,
+        "ting_count": 74,
+        "ting_rate_per_sec": 8.95,
+        "ml_prob_dispensed": null
+      },
+      "visual": {
+        "before_fill_ratio": 0.0,
+        "after_fill_ratio": 0.0,
+        "fill_delta_ratio": 0.0,
+        "frame_diff_ratio": 1.0,
+        "bowl_empty": false,
+        "food_increased": false,
+        "food_present_cv": false,
+        "food_present_llm": null,
+        "llm_reasoning": "",
+        "diagnosis": "Puppy detected eating at the bowl (IR Night Vision) (fill=0.0%, diff=100.0%).",
+        "is_infrared_mode": true,
+        "dog_at_bowl_detected": true
+      }
+    },
+    "files": {
+      "mp4": "/clips/20261030_083549_feed_3p.mp4",
+      "wav": "/clips/20261030_083549_feed_3p.wav",
+      "before_jpg": "/clips/20261030_083549_feed_3p_before_bright.jpg",
+      "after_jpg": "/clips/20261030_083549_feed_3p_after_bright.jpg",
+      "annotated_jpg": "/clips/20261030_083549_feed_3p_annotated.jpg"
+    }
+  }
+]

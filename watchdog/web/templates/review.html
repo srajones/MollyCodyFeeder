@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poor Puppy — Feeder Audio/Video Review & Training Lab</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+  }
+  header {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+    gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+  }
+  h1 { margin: 0; font-size: 1.5rem; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  button {
+    background: #2563eb; color: #fff; border: none; border-radius: 8px;
+    padding: 10px 16px; font-weight: 600; cursor: pointer; font-size: 0.9rem;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.9; }
+  button.secondary { background: #475569; }
+  button.amber { background: #d97706; }
+  button.green { background: #16a34a; }
+  #busyBanner {
+    display: none; background: #1e3a8a; border: 1px solid var(--accent);
+    padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 600;
+  }
+  .clip-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; margin-bottom: 24px;
+  }
+  .clip-header {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+    gap: 12px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px;
+  }
+  .clip-title { font-size: 1.15rem; font-weight: 700; }
+  .badge {
+    padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+  }
+  .badge.reviewed { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid #22c55e; }
+  .badge.unreviewed { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid #f59e0b; }
+  .media-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px; margin-bottom: 16px;
+  }
+  .media-box {
+    background: #0b1120; border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px; text-align: center;
+  }
+  .media-box h4 { margin: 0 0 8px 0; font-size: 0.85rem; color: var(--muted); }
+  .media-box video, .media-box img {
+    width: 100%; max-height: 360px; object-fit: contain; border-radius: 6px; background: #000;
+  }
+  .media-box audio { width: 100%; margin-top: 8px; }
+  .metrics-bar {
+    display: flex; flex-wrap: wrap; gap: 10px; background: #0b1120;
+    padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem;
+  }
+  .metric-pill {
+    background: #1e293b; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px;
+  }
+  .label-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px; margin-bottom: 14px;
+  }
+  label.chk {
+    display: flex; align-items: center; gap: 10px; background: #0b1120;
+    border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px;
+    cursor: pointer; font-size: 0.92rem; user-select: none;
+  }
+  label.chk input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .notes-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .notes-row input[type=text] {
+    flex: 1; min-width: 240px; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: #0b1120; color: var(--text); font-size: 0.92rem;
+  }
+  .save-msg { font-size: 0.85rem; color: #4ade80; font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🐶 Poor Puppy — Audio & Video Feed Review Lab</h1>
+    <div class="sub">Watch & listen to recorded 100% Cloud clips, check ground-truth boxes, and trigger live test feeds</div>
+  </div>
+  <div class="toolbar">
+    <div style="display:flex;align-items:center;gap:6px;background:#1e293b;padding:6px 10px;border-radius:8px;border:1px solid var(--border);">
+      <label for="portionsSelect" style="font-size:0.85rem;font-weight:600;color:var(--muted);">Servings:</label>
+      <select id="portionsSelect" onchange="onPortionsChange()" style="background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-weight:700;">
+        <option value="1" selected>1 Serving</option>
+        <option value="2">2 Servings</option>
+        <option value="3">3 Servings</option>
+        <option value="4">4 Servings</option>
+        <option value="5">5 Servings</option>
+        <option value="6">6 Servings</option>
+        <option value="8">8 Servings</option>
+        <option value="10">10 Servings</option>
+        <option value="12">12 Servings</option>
+        <option value="15">15 Servings</option>
+        <option value="17">17 Servings</option>
+        <option value="20">20 Servings</option>
+      </select>
+      <label for="durationInput" style="font-size:0.85rem;font-weight:600;color:var(--muted);">Rec (s):</label>
+      <input id="durationInput" type="number" min="8" max="120" value="12" style="width:62px;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-weight:700;">
+      <button class="green" onclick="triggerSelectedFeed()">🍖 Dispense &amp; Record</button>
+    </div>
+    <button class="secondary" onclick="triggerCapture(0, 10)">🎥 10s Baseline (No Dispense)</button>
+    <div style="display:flex;align-items:center;gap:6px;background:#1e293b;padding:6px 10px;border-radius:8px;border:1px solid var(--border);">
+      <input id="ttsInput" type="text" value="Hello! The dog feeder is working great." placeholder="Message to speak on feeder..." style="width:210px;background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:0.85rem;">
+      <select id="ttsVolume" title="Speaker volume" style="background:#0b1120;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px;">
+        <option value="1.5">Quiet</option>
+        <option value="2.5" selected>Loud</option>
+        <option value="3.5">Max</option>
+      </select>
+      <button class="amber" onclick="testSpeaker()">🔊 Speak TTS</button>
+    </div>
+    <button class="secondary" onclick="loadClips()">↻ Refresh</button>
+  </div>
+</header>
+
+<div id="busyBanner"></div>
+<div id="clipsContainer">Loading clips...</div>
+
+<script>
+function onPortionsChange() {
+  const p = parseInt(document.getElementById('portionsSelect').value || '1', 10);
+  const recSec = Math.min(110, Math.max(12, 7 + p * 4));
+  document.getElementById('durationInput').value = recSec;
+}
+
+function triggerSelectedFeed() {
+  const p = parseInt(document.getElementById('portionsSelect').value || '1', 10);
+  const d = parseFloat(document.getElementById('durationInput').value || '12');
+  triggerCapture(p, d);
+}
+
+async function checkStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const st = await r.json();
+    const b = document.getElementById('busyBanner');
+    if (st.busy_status) {
+      b.style.display = 'block';
+      b.textContent = '⏳ ' + st.busy_status;
+    } else {
+      if (b.style.display === 'block') {
+        b.style.display = 'none';
+        loadClips();
+      }
+    }
+  } catch (e) {}
+}
+setInterval(checkStatus, 2000);
+
+async function triggerCapture(portions, duration) {
+  const b = document.getElementById('busyBanner');
+  b.style.display = 'block';
+  b.textContent = `⏳ Recording ${duration}s Cloud HD Video + Audio (${portions > 0 ? 'dispensing ' + portions + ' serving(s)' : 'baseline'})...`;
+  await fetch('/api/capture', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({portions, duration})
+  });
+  loadClips();
+}
+
+async function testSpeaker() {
+  const el = document.getElementById('ttsInput');
+  const msg = (el && el.value ? el.value.trim() : '') || prompt("Enter message to speak through the feeder's speaker:", "Hello! The dog feeder is working great.");
+  if (!msg) return;
+  const b = document.getElementById('busyBanner');
+  b.style.display = 'block';
+  b.textContent = '🔊 Streaming TTS to feeder speaker over Cloud...';
+  try {
+    const r = await fetch('/api/say', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text: msg, volume: parseFloat(document.getElementById('ttsVolume').value)})
+    });
+    const res = await r.json();
+    b.textContent = res.ok
+      ? `✅ Speaker TTS finished (${res.duration_sec}s, speaker_opened=${res.speaker_opened}, unacked=${res.unacked_remaining})`
+      : `❌ Speaker TTS error: ${res.error || 'unknown'}`;
+    setTimeout(() => { b.style.display = 'none'; }, 4000);
+  } catch (e) {
+    b.style.display = 'none';
+  }
+}
+
+async function saveLabel(clipId) {
+  const card = document.getElementById('card-' + clipId);
+  const payload = {
+    clip_id: clipId,
+    user_reviewed: true,
+    feed_success: card.querySelector('[name=feed_success]').checked,
+    is_clog: card.querySelector('[name=is_clog]').checked,
+    heard_motor: card.querySelector('[name=heard_motor]').checked,
+    heard_kibble: card.querySelector('[name=heard_kibble]').checked,
+    saw_kibble_accumulate: card.querySelector('[name=saw_kibble_accumulate]').checked,
+    bowl_had_food_before: card.querySelector('[name=bowl_had_food_before]').checked,
+    dog_at_bowl: card.querySelector('[name=dog_at_bowl]').checked,
+    notes: card.querySelector('[name=notes]').value
+  };
+  const msgEl = document.getElementById('msg-' + clipId);
+  msgEl.textContent = 'Saving...';
+  const r = await fetch('/api/label', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  });
+  if (r.ok) {
+    msgEl.textContent = '✓ Saved to SQLite + JSON!';
+    const badge = document.getElementById('badge-' + clipId);
+    badge.className = 'badge reviewed';
+    badge.textContent = '✓ REVIEWED';
+  } else {
+    msgEl.textContent = 'Save failed!';
+  }
+}
+
+async function loadClips() {
+  const r = await fetch('/api/clips');
+  const data = await r.json();
+  const container = document.getElementById('clipsContainer');
+  if (!data.clips || !data.clips.length) {
+    container.innerHTML = '<p>No clips found yet.</p>';
+    return;
+  }
+  container.innerHTML = data.clips.map(c => {
+    const a = (c.metrics && c.metrics.audio) || {};
+    const v = (c.metrics && c.metrics.visual) || {};
+    const f = c.files || {};
+    return `
+      <div class="clip-card" id="card-${c.clip_id}">
+        <div class="clip-header">
+          <div>
+            <div class="clip-title">${c.title}</div>
+            <div class="sub">ID: <code>${c.clip_id}</code> | Updated: ${c.updated_at}</div>
+          </div>
+          <span id="badge-${c.clip_id}" class="badge ${c.user_reviewed ? 'reviewed' : 'unreviewed'}">
+            ${c.user_reviewed ? '✓ REVIEWED' : 'NEEDS YOUR REVIEW'}
+          </span>
+        </div>
+
+        <div class="media-grid">
+          ${f.mp4 ? `
+          <div class="media-box">
+            <h4>🎬 Live Video + Audio (.mp4)</h4>
+            <video src="${f.mp4}" controls preload="metadata"></video>
+          </div>` : (f.wav ? `
+          <div class="media-box">
+            <h4>🔊 Recorded Audio (.wav)</h4>
+            <audio src="${f.wav}" controls preload="metadata"></audio>
+          </div>` : '')}
+
+          ${f.before_jpg ? `
+          <div class="media-box">
+            <h4>📸 BEFORE Snapshot</h4>
+            <a href="${f.before_jpg}" target="_blank"><img src="${f.before_jpg}" loading="lazy"></a>
+          </div>` : ''}
+
+          ${f.after_jpg ? `
+          <div class="media-box">
+            <h4>📸 AFTER Snapshot</h4>
+            <a href="${f.after_jpg}" target="_blank"><img src="${f.after_jpg}" loading="lazy"></a>
+          </div>` : ''}
+
+          ${f.annotated_jpg ? `
+          <div class="media-box">
+            <h4>🔍 Shadow-Lifted Bowl ROI</h4>
+            <a href="${f.annotated_jpg}" target="_blank"><img src="${f.annotated_jpg}" loading="lazy"></a>
+          </div>` : ''}
+        </div>
+
+        <div class="metrics-bar">
+          <div class="metric-pill"><b>Audio Motor:</b> ${a.motor_detected ? 'YES' : 'NO'} (${a.motor_duration_sec !== undefined ? a.motor_duration_sec+'s, ' : ''}${a.motor_energy_db ?? '-'} dB)</div>
+          <div class="metric-pill"><b>Food came out (sound):</b> ${a.kibble_dispensed_audio ? '✅ YES' : (a.motor_detected ? '🚨 NO (motor only)' : '— no motor')}</div>
+          <div class="metric-pill"><b>Before Fill:</b> ${v.before_fill_ratio !== undefined ? (v.before_fill_ratio*100).toFixed(1)+'%' : '-'}</div>
+          <div class="metric-pill"><b>After Fill:</b> ${v.after_fill_ratio !== undefined ? (v.after_fill_ratio*100).toFixed(1)+'%' : '-'}</div>
+          <div class="metric-pill"><b>Fill Delta:</b> ${v.fill_delta_ratio !== undefined ? (v.fill_delta_ratio*100 >= 0 ? '+' : '')+(v.fill_delta_ratio*100).toFixed(1)+'%' : '-'}</div>
+          <div class="metric-pill"><b>Visual Verdict:</b> ${v.is_infrared_mode && !v.food_increased ? '🌙 IR: audio decides' : (v.food_increased ? '✅ Increased' : (v.dog_at_bowl_detected ? '🐶 Obstructed' : '⚠️ No Increase'))}</div>
+          <div class="metric-pill"><b>Kibble "ting":</b> ${a.ting_rate_per_sec !== undefined ? a.ting_count+' tings, '+a.ting_rate_per_sec+'/s' : '-'}${a.ml_prob_dispensed != null ? ' · model p(food)='+a.ml_prob_dispensed : ''}</div>
+          ${c.user_reviewed && a.motor_detected && (a.kibble_dispensed_audio !== !!c.feed_success) ? '<div class="metric-pill" style="border-color:var(--red);color:var(--red)"><b>⚠️ Classifier disagrees with your label</b> — great training example</div>' : ''}
+          ${!c.user_reviewed && a.ml_prob_dispensed != null && Math.abs(a.ml_prob_dispensed - 0.5) < 0.25 ? '<div class="metric-pill" style="border-color:var(--amber);color:var(--amber)"><b>🤔 Model unsure</b> — please label</div>' : ''}
+        </div>
+
+        <div class="label-grid">
+          <label class="chk"><input type="checkbox" name="feed_success" ${c.feed_success ? 'checked' : ''} onchange="saveLabel('${c.clip_id}')"> ✅ <b>Successful Feed</b> (Food came out)</label>
+          <label class="chk"><input type="checkbox" name="is_clog" ${c.is_clog ? 'checked' : ''} onchange="saveLabel('${c.clip_id}')"> 🚨 <b>Clogged / Failed</b> (No food came out)</label>
+          <label class="chk"><input type="checkbox" name="heard_motor" ${c.heard_motor ? 'checked' : ''} onchange="saveLabel('${c.clip_id}')"> ⚙️ <b>Heard Motor Churning</b></label>
+          <label class="chk"><input type="checkbox" name="heard_kibble" ${c.heard_kibble ? 'checked' : ''} onchange="saveLabel('${c.clip_id}')"> 🥣 <b>Heard Kibble Hitting Dish / Pile</b></label>
+          <label class="chk"><input type="checkbox" name="saw_kibble_accumulate" ${c.saw_kibble_accumulate ? 'checked' : ''} onchange="saveLabel('${c.clip_id}')"> 👀 <b>Saw Kibble Accumulate in Bowl</b></label>
+          <label class="chk"><input type="checkbox" name="bowl_had_food_before" ${c.bowl_had_food_before ? 'checked' : ''} onchange="saveLabel('${c.clip_id}')"> 🍲 <b>Bowl Already Had Food Before</b></label>
+          <label class="chk"><input type="checkbox" name="dog_at_bowl" ${c.dog_at_bowl ? 'checked' : ''} onchange="saveLabel('${c.clip_id}')"> 🐶 <b>Dog Eating / Blocking Bowl</b></label>
+        </div>
+
+        <div class="notes-row">
+          <input type="text" name="notes" placeholder="Notes (e.g. 'kibble hit metal loudly', 'kibble landed softly on existing food', etc.)" value="${(c.notes || '').replace(/"/g, '&quot;')}" onkeydown="if(event.key==='Enter') saveLabel('${c.clip_id}')">
+          <button onclick="saveLabel('${c.clip_id}')">Save Feedback</button>
+          <span class="save-msg" id="msg-${c.clip_id}"></span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+loadClips();
+</script>
+</body>
+</html>

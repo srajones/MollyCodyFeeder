@@ -1,0 +1,45 @@
+# Secrets & Active Sessions (NEVER COMMIT)
+.env
+tuya_session.json
+tuya_login_qr.png
+mollycody_login_qr.png
+
+# APK / Binary dumps
+*.apk
+*.apks
+apk_extract/
+
+# Python & OS
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.DS_Store
+
+# Runtime SQLite WAL Databases & Backups
+*.db
+*.db-wal
+*.db-shm
+*.db.bak
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/backups/
+data/ml_events.jsonl
+exports/
+
+# Captured Video/Audio/Snapshots (Keep Ground-Truth Training Labels JSON!)
+captures/*
+!captures/review_clips/
+captures/review_clips/*
+captures/review_clips/.*
+!captures/review_clips/training_labels.json
+data/tts_cache/
+
+# Archived Review Lab sessions: keep only the labels JSON in git
+!captures/archive/
+captures/archive/*/*
+!captures/archive/*/training_labels.json
+
+# Optional web control page: generated per-VPS by ./vps_install.sh (port is chosen on the box)
+docker-compose.override.yml

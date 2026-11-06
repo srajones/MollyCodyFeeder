@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Poor Puppy · Home Assistant setup</title>
+<style>
+  :root { color-scheme: dark; --bg: #0f1216; --card: #171b21; --card2: #1d222a; --line: #272e38; --text: #e8ebf0; --muted: #8d97a5;
+          --accent: #7cb3ff; --ok: #3ecf8e; --warn: #f5b84a; --bad: #ff6b6b; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: radial-gradient(1200px 600px at 50% -200px, #1b2433 0%, var(--bg) 60%) fixed; color: var(--text); }
+  main { max-width: 860px; margin: 0 auto; padding: 16px 14px 80px; display: grid; gap: 14px; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  h1 { font-size: 22px; margin: 0; }
+  a { color: var(--accent); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .step { display: flex; gap: 12px; align-items: baseline; margin: 0 0 10px; }
+  .step b { flex: none; width: 30px; height: 30px; border-radius: 50%; background: #233046; color: var(--accent); display: grid; place-items: center; font-size: 15px; }
+  .step h2 { font-size: 18px; margin: 0; }
+  p, li { color: #cdd4de; } .muted { color: var(--muted); font-size: 14px; }
+  ol, ul { padding-left: 22px; margin: 6px 0; } li { margin: 4px 0; }
+  code { background: #0f1318; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; font-size: 14px; }
+  pre { background: #0b0e12; border: 1px solid var(--line); border-radius: 10px; padding: 12px; overflow: auto; font-size: 13px; line-height: 1.45; margin: 0; max-height: 420px; }
+  .codebox { position: relative; margin-top: 8px; }
+  .codebox button { position: absolute; top: 8px; right: 8px; }
+  button { font: inherit; border: 0; border-radius: 10px; padding: 8px 14px; cursor: pointer; background: #262e39; color: var(--text); }
+  button.primary { background: var(--accent); color: #07111f; font-weight: 600; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td, th { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+  .opt { display: flex; gap: 8px; align-items: flex-start; background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 14px; }
+  .opt input { accent-color: var(--accent); width: 18px; height: 18px; margin-top: 2px; flex: none; }
+  .opt small { display: block; color: var(--muted); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  input[type=text], select { font: inherit; background: #0f1318; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+  .callout { border-left: 3px solid var(--warn); background: #221d12; padding: 10px 12px; border-radius: 8px; font-size: 14px; color: #e9dcc0; margin-top: 10px; }
+  .callout.info { border-color: var(--accent); background: #131c29; color: #cfe0f5; }
+  details { margin-top: 8px; } summary { cursor: pointer; color: var(--accent); }
+  #toast { position: fixed; left: 50%; bottom: 16px; translate: -50% 0; background: #222a35; border: 1px solid #2f6b52; border-radius: 12px;
+           padding: 10px 16px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>🏠 Home Assistant setup</h1>
+  </header>
+  <p class="muted" style="margin:0">This adds Poor Puppy <b>sensors</b> to Home Assistant (last meal, today's meals, next meal, hopper…), refreshed
+    automatically. You copy two snippets into HA's config files. About 5 minutes, no coding.
+    <br>Your existing Home Assistant <i>notifications</i> (the webhook) keep working; this is extra.</p>
+
+  <section class="card" aria-labelledby="s1">
+    <div class="step"><b>1</b><h2 id="s1">Check the data Home Assistant will get</h2></div>
+    <p>This is live data from your feeder watchdog right now. If you see values here, the link works.</p>
+    <div id="preview" class="muted">Loading…</div>
+    <div class="row"><button type="button" id="btnTest">↻ Test again</button><span id="testResult"></span></div>
+  </section>
+
+  <section class="card" aria-labelledby="s2">
+    <div class="step"><b>2</b><h2 id="s2">Pick your sensors</h2></div>
+    <p>Recommended ones are already ticked. You can change this later by coming back and copying the snippet again.</p>
+    <div class="grid" id="sensorOpts"></div>
+    <div class="row">
+      <label for="interval">Refresh every</label>
+      <select id="interval"><option value="60" selected>1 minute (recommended)</option><option value="120">2 minutes</option><option value="300">5 minutes</option></select>
+      <label for="user">Your page username</label>
+      <input type="text" id="user" value="puppy" autocomplete="username" size="12">
+    </div>
+    <p class="muted">Home Assistant logs in with the same username/password you use for this page. The password goes into HA's
+      private <code>secrets.yaml</code> file, never into <code>configuration.yaml</code>.</p>
+  </section>
+
+  <section class="card" aria-labelledby="s3">
+    <div class="step"><b>3</b><h2 id="s3">Add your password to <code>secrets.yaml</code></h2></div>
+    <ol>
+      <li>In Home Assistant, open your config files. Easiest: <b>Settings → Add-ons → File editor</b> (or "Studio Code Server") → <b>Open Web UI</b>.
+        <br><span class="muted">No add-ons (HA Container/Core)? Edit the files in your HA config folder with any text editor.</span></li>
+      <li>Open <code>secrets.yaml</code> (same folder as <code>configuration.yaml</code>; create it if it's missing).</li>
+      <li>Paste these two lines at the end, then replace <code>YOUR-PASSWORD-HERE</code> with your real page password (keep the quotes). Save.</li>
+    </ol>
+    <div class="codebox"><pre id="secretsYaml"></pre><button type="button" data-copy="secretsYaml">Copy</button></div>
+  </section>
+
+  <section class="card" aria-labelledby="s4">
+    <div class="step"><b>4</b><h2 id="s4">Add the sensors to <code>configuration.yaml</code></h2></div>
+    <ol>
+      <li>Open <code>configuration.yaml</code> in the same editor.</li>
+      <li>Scroll to the very <b>end</b> and paste the snippet below on a new line (it must start at the left edge, no spaces before <code>rest:</code>). Save.</li>
+    </ol>
+    <div class="callout">Already have a line that says <code>rest:</code> in that file? Don't paste a second <code>rest:</code>.
+      Instead, copy everything <i>under</i> it (starting at <code>  - resource:</code>) and paste it below your existing <code>rest:</code> line.</div>
+    <div class="codebox"><pre id="configYaml"></pre><button type="button" data-copy="configYaml">Copy</button></div>
+  </section>
+
+  <section class="card" aria-labelledby="s5">
+    <div class="step"><b>5</b><h2 id="s5">Check and restart Home Assistant</h2></div>
+    <ol>
+      <li><b>Settings → System → (top right ⋮ or power icon) → Restart Home Assistant</b>. HA checks the config first; if it says
+        the configuration is invalid, read the line number it shows. Usually it's indentation or a missing quote. Fix it and try again.
+        <br><span class="muted">Or check first: <b>Developer tools → YAML → Check configuration</b> (enable Advanced mode in your profile if you don't see it).</span></li>
+      <li>After the restart, go to <b>Settings → Devices &amp; services → Entities</b> and search <code>poor puppy</code>. Your sensors are listed there.</li>
+      <li>Open one: it should show a value within a minute. If it says <i>Unavailable</i>, see Troubleshooting below.</li>
+    </ol>
+  </section>
+
+  <section class="card" aria-labelledby="s6">
+    <div class="step"><b>6</b><h2 id="s6">Optional: add a dashboard card</h2></div>
+    <ol>
+      <li>Open your dashboard → <b>⋮ → Edit dashboard → + Add card</b> → scroll down to <b>Manual</b>.</li>
+      <li>Delete what's there, paste this, and click <b>Save</b>.</li>
+    </ol>
+    <div class="codebox"><pre id="cardYaml"></pre><button type="button" data-copy="cardYaml">Copy</button></div>
+  </section>
+
+  <section class="card" aria-labelledby="s7">
+    <div class="step"><b>7</b><h2 id="s7">Optional: camera photo in Home Assistant</h2></div>
+    <ol>
+      <li><b>Settings → Devices &amp; services → + Add integration</b> → search <b>Generic Camera</b>.</li>
+      <li><b>Still image URL:</b> <code id="snapUrl"></code> (leave Stream source empty).</li>
+      <li><b>Authentication:</b> basic · <b>Username / Password:</b> your page login · <b>Verify SSL:</b> on. Submit, and confirm the preview.</li>
+    </ol>
+    <p class="muted">It shows the latest photo the watchdog took (meal photos, or when you tap “New photo” on the control page). It doesn't wake
+      the camera by itself, so it can't interfere with meal recordings.</p>
+  </section>
+
+  <section class="card" aria-labelledby="s8">
+    <div class="step"><b>8</b><h2 id="s8">Optional: automation example (hopper getting low)</h2></div>
+    <p>Settings → Automations &amp; scenes → <b>+ Create automation → ⋮ → Edit in YAML</b>, paste, then change <code>notify.notify</code> to your phone's
+      notify service (e.g. <code>notify.mobile_app_your_phone</code>).</p>
+    <div class="codebox"><pre id="autoYaml"></pre><button type="button" data-copy="autoYaml">Copy</button></div>
+  </section>
+
+  <section class="card" aria-labelledby="s9">
+    <div class="step"><b>?</b><h2 id="s9">Troubleshooting</h2></div>
+    <ul>
+      <li><b>Sensors “Unavailable”:</b> check the HA log (<b>Settings → System → Logs</b>, search <code>rest</code>).
+        <ul>
+          <li><code>401</code>: wrong username/password in <code>secrets.yaml</code> (quotes around the password, no extra spaces).</li>
+          <li><code>429</code>: refreshing too often; keep it at 1 minute or slower.</li>
+          <li>Timeout / SSL error: open <code id="sumUrl"></code> in a browser on the same network as HA; it should ask for your login and then show text.</li>
+        </ul></li>
+      <li><b>“Invalid config” on restart:</b> almost always indentation. Every line must keep the spaces exactly as copied; YAML doesn't allow tabs.</li>
+      <li><b>A value is empty (“Unknown”):</b> normal when there's no data yet, e.g. the hopper estimate before you tap “I refilled the hopper”,
+        or Today before the first meal of the day.</li>
+      <li><b>Changed your page password?</b> Update it in <code>secrets.yaml</code> and restart HA.</li>
+    </ul>
+  </section>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const BASE = location.origin + location.pathname.replace(/\/ha\/?$/, "").replace(/\/$/, "");
+const SUMMARY_URL = BASE + "/ha/summary.json";
+// kind: sensor | binary. key = field in /ha/summary.json
+const SENSORS = [
+  { id: "last_meal", name: "Poor Puppy last meal", key: "last_meal_time", dc: "timestamp", icon: "mdi:food-drumstick", on: true, help: "When the last meal happened" },
+  { id: "last_meal_result", name: "Poor Puppy last meal result", key: "last_meal_text", icon: "mdi:check-circle-outline", on: true, help: "Fed / weak flow / couldn't verify / problem" },
+  { id: "last_meal_problem", kind: "binary", name: "Poor Puppy last meal problem", tpl: "{{ not value_json.last_meal_ok }}", key: "last_meal_ok", dc: "problem", on: true, help: "On when the last meal wasn't confirmed (great for automations)" },
+  { id: "next_meal", name: "Poor Puppy next meal", key: "next_meal_time", dc: "timestamp", icon: "mdi:clock-outline", on: true, help: "When the next scheduled meal is" },
+  { id: "meals_today", name: "Poor Puppy meals today", key: "today_meals", unit: "meals", icon: "mdi:calendar-today", on: true, attrs: ["today_list"], help: "Count; the list of today's meals is an attribute" },
+  { id: "fed_today", name: "Poor Puppy fed today", key: "today_fed", unit: "meals", icon: "mdi:food", on: true, help: "Meals confirmed fed today" },
+  { id: "problems_today", name: "Poor Puppy problems today", key: "today_problems", unit: "meals", icon: "mdi:alert-circle-outline", on: true, help: "Meals with a problem / unverified today" },
+  { id: "portions_today", name: "Poor Puppy portions today", key: "today_portions", unit: "portions", icon: "mdi:counter", help: "Portions confirmed today" },
+  { id: "confirmed_7d", name: "Poor Puppy confirmed 7 days", key: "week_confirmed_pct", unit: "%", icon: "mdi:percent", sc: "measurement", on: true, help: "Share of meals confirmed in the last 7 days" },
+  { id: "hopper", name: "Poor Puppy hopper", key: "hopper_percent", unit: "%", icon: "mdi:silo", sc: "measurement", on: true, help: "Estimated food left (after you mark a refill)" },
+  { id: "hopper_days_left", name: "Poor Puppy hopper days left", key: "hopper_days_left", unit: "d", icon: "mdi:calendar-clock", sc: "measurement", on: true, help: "Days of food left at your usual portions" },
+  { id: "kibble_flow", name: "Poor Puppy kibble flow", key: "kibble_flow", unit: "hits/s", icon: "mdi:waveform", sc: "measurement", help: "Kibble hits per second at the last meal (low = weak flow)" },
+  { id: "kibble_flow_7d", name: "Poor Puppy kibble flow 7 days", key: "kibble_flow_7d_avg", unit: "hits/s", icon: "mdi:chart-line", sc: "measurement", help: "7-day average kibble flow (dropping = hopper low / jam forming)" },
+  { id: "last_alert", name: "Poor Puppy last alert", key: "last_alert_title", icon: "mdi:bell-alert-outline", help: "Title of the last alert that was sent" },
+  { id: "recording", kind: "binary", name: "Poor Puppy recording", key: "busy", dc: "running", help: "On while a meal is being recorded" },
+];
+const slug = (n) => n.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+function toast(t) { const el = $("#toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 2500); }
+
+$("#sensorOpts").innerHTML = SENSORS.map((s) => `<label class="opt"><input type="checkbox" value="${s.id}" ${s.on ? "checked" : ""}>
+  <span>${esc(s.name.replace("Poor Puppy ", ""))}${s.kind === "binary" ? " (on/off)" : ""}<small>${esc(s.help)}</small></span></label>`).join("");
+
+function chosen() { return [...document.querySelectorAll("#sensorOpts input:checked")].map((i) => SENSORS.find((s) => s.id === i.value)); }
+function sensorYaml(s) {
+  const lines = [`      - name: "${s.name}"`, `        unique_id: poor_puppy_${s.id}`,
+    `        value_template: "${s.tpl || `{{ value_json.${s.key} }}`}"`, `        availability: "{{ value_json.${s.key} is not none }}"`];
+  if (s.dc) lines.push(`        device_class: ${s.dc}`);
+  if (s.unit) lines.push(`        unit_of_measurement: "${s.unit}"`);
+  if (s.sc) lines.push(`        state_class: ${s.sc}`);
+  if (s.icon && !s.dc) lines.push(`        icon: ${s.icon}`);
+  if (s.attrs) lines.push(`        json_attributes:`, ...s.attrs.map((a) => `          - ${a}`));
+  return lines.join("\n");
+}
+function render() {
+  const sel = chosen(), sens = sel.filter((s) => s.kind !== "binary"), bins = sel.filter((s) => s.kind === "binary");
+  const user = ($("#user").value.trim() || "puppy").replace(/"/g, "");
+  $("#secretsYaml").textContent = `poor_puppy_username: "${user}"\npoor_puppy_password: "YOUR-PASSWORD-HERE"`;
+  let y = `# Poor Puppy feeder sensors (generated by ${BASE}/ha)\nrest:\n  - resource: ${SUMMARY_URL}\n    authentication: basic\n` +
+    `    username: !secret poor_puppy_username\n    password: !secret poor_puppy_password\n    scan_interval: ${$("#interval").value}\n    timeout: 20\n`;
+  if (sens.length) y += `    sensor:\n${sens.map(sensorYaml).join("\n")}\n`;
+  if (bins.length) y += `    binary_sensor:\n${bins.map(sensorYaml).join("\n")}\n`;
+  if (!sel.length) y += `    # (tick at least one sensor in step 2)\n`;
+  $("#configYaml").textContent = y;
+  const ent = (s) => `${s.kind === "binary" ? "binary_sensor" : "sensor"}.${slug(s.name)}`;
+  const card = sel.length ? sel.map((s) => `  - entity: ${ent(s)}\n    name: ${s.name.replace("Poor Puppy ", "").replace(/^./, (c) => c.toUpperCase())}`) : ["  # tick sensors in step 2"];
+  $("#cardYaml").textContent = `type: entities\ntitle: 🐶 Poor Puppy\nentities:\n${card.join("\n")}`;
+  $("#autoYaml").textContent = `alias: Poor Puppy - hopper getting low
+description: Reminder when there are less than 3 days of food left
+triggers:
+  - trigger: numeric_state
+    entity_id: sensor.poor_puppy_hopper_days_left
+    below: 3
+actions:
+  - action: notify.notify
+    data:
+      title: "🐶 Poor Puppy: refill soon"
+      message: "About {{ states('sensor.poor_puppy_hopper_days_left') }} days of food left in the hopper."
+mode: single`;
+  $("#snapUrl").textContent = BASE + "/snapshot.jpg";
+  $("#sumUrl").textContent = SUMMARY_URL;
+}
+document.querySelectorAll("#sensorOpts input, #interval, #user").forEach((el) => el.addEventListener("input", render));
+
+async function test() {
+  $("#testResult").textContent = "Testing…"; $("#testResult").className = "muted";
+  try {
+    const res = await fetch("ha/summary.json", { cache: "no-store" });
+    if (res.status === 401) throw new Error("Your login expired. Reload the page.");
+    if (res.status === 429) throw new Error("Too many requests; wait a few seconds.");
+    if (!res.ok) throw new Error(`The watchdog answered HTTP ${res.status}.`);
+    const d = await res.json();
+    const rows = SENSORS.map((s) => { const v = d[s.key]; let show = v;
+      if (s.dc === "timestamp" && v) show = new Date(v).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" });
+      if (s.tpl) show = v == null ? null : (!v ? "on (problem)" : "off (ok)");
+      if (s.kind === "binary" && s.key === "busy") show = v ? "on" : "off";
+      return `<tr><td>${esc(s.name.replace("Poor Puppy ", ""))}</td><td>${show == null || show === "" ? '<span class="muted">unknown (no data yet)</span>' : esc(show) + (s.unit && !s.tpl ? " " + esc(s.unit) : "")}</td></tr>`; });
+    $("#preview").innerHTML = `<table><tr><th>Sensor</th><th>Value right now</th></tr>${rows.join("")}</table>`;
+    $("#testResult").innerHTML = '<span class="ok">✓ Working: Home Assistant will see these values.</span>';
+  } catch (e) {
+    $("#preview").innerHTML = `<p class="bad">${esc(e.message)}</p>`;
+    $("#testResult").innerHTML = `<span class="bad">✗ ${esc(e.message)}</span>`;
+  }
+}
+$("#btnTest").onclick = test;
+document.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
+  const text = $("#" + b.dataset.copy).textContent;
+  try { await navigator.clipboard.writeText(text); toast("Copied ✓"); }
+  catch { const r = document.createRange(); r.selectNodeContents($("#" + b.dataset.copy)); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Selected: press Ctrl/⌘+C"); }
+}));
+render(); test();
+</script>
+<script src="/nav.js" onerror="this.remove()"></script>
+</body>
+</html>

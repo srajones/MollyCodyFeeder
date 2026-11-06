@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+REPO_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+if [ -x "$REPO_DIR/.venv/bin/python" ]; then
+  exec "$REPO_DIR/.venv/bin/python" "$REPO_DIR/feeder_cli.py" "$@"
+else
+  exec python3 "$REPO_DIR/feeder_cli.py" "$@"
+fi

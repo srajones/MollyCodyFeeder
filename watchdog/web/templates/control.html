@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0f1216">
+<title>Poor Puppy</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0f1216; --card: #171b21; --card2: #1d222a; --line: #272e38; --text: #e8ebf0; --muted: #8d97a5;
+    --accent: #7cb3ff; --ok: #3ecf8e; --warn: #f5b84a; --bad: #ff6b6b; --info: #8fa8ff;
+    --r: 14px; font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: radial-gradient(1200px 600px at 50% -200px, #1b2433 0%, var(--bg) 60%) fixed; color: var(--text); }
+  main { max-width: 1080px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 14px 90px; display: grid; gap: 14px;
+         grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 900px) { main { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+                              header { grid-column: 1 / -1; } }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -.01em; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--card2);
+          border: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; display: inline-block; }
+  .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); } .dot.info { background: var(--info); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; }
+  .card > h2 { font-size: 12.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  .col { display: grid; gap: 14px; }
+  .viewer { position: relative; border-radius: 10px; overflow: hidden; background: #000; aspect-ratio: 9 / 16; max-height: 72vh; margin: 0 auto; }
+  .viewer img { width: 100%; height: 100%; object-fit: contain; display: block; transition: opacity .2s; }
+  .viewer img.loading { opacity: .35; }
+  .badge { position: absolute; left: 10px; top: 10px; right: 10px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
+  .badge span { background: rgb(0 0 0 / .65); backdrop-filter: blur(6px); padding: 4px 10px; border-radius: 999px; font-size: 13px; }
+  .empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; color: var(--muted); font-size: 15px; }
+  .empty[hidden] { display: none; }
+  .seg { display: inline-flex; background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; }
+  .seg[hidden] { display: none; }
+  .seg button { background: none; padding: 6px 12px; font-size: 14px; border-radius: 8px; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: #2b3442; color: var(--text); }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .spacer { flex: 1; }
+  button { font: inherit; border: 0; border-radius: 10px; padding: 10px 16px; cursor: pointer; background: #262e39; color: var(--text);
+           transition: filter .15s, transform .05s; }
+  button[hidden] { display: none; }
+  button:hover { filter: brightness(1.15); } button:active { transform: translateY(1px); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.primary { background: var(--accent); color: #07111f; font-weight: 600; }
+  button.feed { background: linear-gradient(180deg, #ff8a5c, #f0603a); color: #fff; font-weight: 700; }
+  button:disabled { opacity: .5; cursor: progress; }
+  .details { margin-top: 12px; font-size: 14px; color: #c8d0db; white-space: pre-line; background: var(--card2); border-radius: 10px; padding: 10px 12px; }
+  .details[hidden] { display: none; }
+  .tl { list-style: none; margin: 0; padding: 0; max-height: 520px; overflow-y: auto; scrollbar-width: thin; }
+  .day { position: sticky; top: 0; background: var(--card); color: var(--muted); font-size: 12.5px; font-weight: 600; text-transform: uppercase;
+         letter-spacing: .06em; padding: 8px 2px 6px; z-index: 1; }
+  .ev { all: unset; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: 14px 82px 1fr auto; align-items: center; gap: 10px;
+        padding: 10px 8px; border-radius: 10px; cursor: pointer; }
+  .ev:hover { background: var(--card2); } .ev:focus-visible { outline: 2px solid var(--accent); }
+  .ev[aria-current="true"] { background: #222b38; box-shadow: inset 3px 0 var(--accent); }
+  .ev .t { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+  .ev .what { min-width: 0; } .ev .what small { display: block; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ev .cam { color: var(--muted); font-size: 13px; }
+  .tl-empty { color: var(--muted); padding: 16px 4px; }
+  label.lbl { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  textarea { width: 100%; min-height: 70px; resize: vertical; font: inherit; color: var(--text); background: #0f1318; border: 1px solid var(--line);
+             border-radius: 10px; padding: 10px; }
+  textarea:focus-visible { outline: 2px solid var(--accent); border-color: transparent; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .chips button { padding: 6px 12px; font-size: 14px; border-radius: 999px; background: var(--card2); border: 1px solid var(--line); }
+  .stepper { display: inline-flex; align-items: center; background: var(--card2); border: 1px solid var(--line); border-radius: 10px; }
+  .stepper button { background: none; padding: 8px 14px; font-size: 18px; }
+  .stepper output { min-width: 2.5ch; text-align: center; font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .check { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
+  .check input { accent-color: var(--accent); width: 18px; height: 18px; }
+  .hint { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 14px; margin: 0; }
+  .kv dt { color: var(--muted); } .kv dd { margin: 0; }
+  #toast { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); translate: -50% 0; max-width: min(92vw, 560px);
+           background: #222a35; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-size: 15px;
+           box-shadow: 0 10px 30px rgb(0 0 0 / .4); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 10; }
+  #toast.show { opacity: 1; } #toast.ok { border-color: #2f6b52; } #toast.bad { border-color: #7a3434; } #toast.warn { border-color: #7a6030; }
+  dialog { border: 1px solid var(--line); border-radius: var(--r); background: var(--card); color: var(--text); padding: 20px; max-width: 360px; width: 92vw; }
+  dialog::backdrop { background: rgb(0 0 0 / .6); backdrop-filter: blur(2px); }
+  dialog h3 { margin: 0 0 6px; } dialog p { color: var(--muted); margin: 0 0 16px; }
+  .viewer video { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
+  .viewer video[hidden], .viewer img[hidden] { display: none; }
+  .fb { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; font-size: 14px; color: var(--muted); }
+  .fb[hidden] { display: none; }
+  .fb button { padding: 6px 12px; font-size: 14px; background: var(--card2); border: 1px solid var(--line); }
+  .fb button[aria-pressed="true"].up { background: #1f4434; border-color: #2f6b52; color: #c9f5df; }
+  .fb button[aria-pressed="true"].down { background: #4a2323; border-color: #7a3434; color: #ffd6d6; }
+  .meals { display: flex; gap: 8px; flex-wrap: wrap; }
+  .meal { flex: 1 1 110px; background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .meal b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .meal span { font-size: 13px; color: var(--muted); }
+  .chart { width: 100%; height: 170px; display: block; }
+  .chart text { fill: var(--muted); font-size: 11px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .bar { height: 10px; background: var(--card2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #3ecf8e, #7cb3ff); }
+  details.card > summary { cursor: pointer; list-style: none; font-size: 12.5px; text-transform: uppercase; letter-spacing: .08em;
+                           color: var(--muted); font-weight: 600; }
+  details.card > summary::-webkit-details-marker { display: none; }
+  details.card > summary::after { content: " ▸"; } details.card[open] > summary::after { content: " ▾"; }
+  details.card[open] > summary { margin-bottom: 12px; }
+  .list { list-style: none; margin: 0; padding: 0; font-size: 14px; display: grid; gap: 8px; }
+  .list li { background: var(--card2); border-radius: 10px; padding: 8px 10px; }
+  .list small { color: var(--muted); display: block; }
+  a.btnlink { display: inline-block; text-decoration: none; color: var(--text); background: #262e39; padding: 10px 16px; border-radius: 10px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>🐶 Poor Puppy</h1>
+    <span class="pill"><span class="dot" id="statusDot"></span><span id="statusText">Connecting…</span></span>
+  </header>
+
+  <div class="col">
+    <section class="card" aria-labelledby="h-view">
+      <h2 id="h-view">Camera</h2>
+      <div class="viewer">
+        <img id="viewImg" alt="">
+        <video id="viewVid" controls playsinline preload="metadata" hidden></video>
+        <div class="badge" id="viewBadge"></div>
+        <div class="empty" id="viewEmpty" hidden></div>
+      </div>
+      <div class="row">
+        <div class="seg" id="kindSeg" role="group" aria-label="Which photo of this feed" hidden>
+          <button type="button" data-kind="after" aria-pressed="true">After</button>
+          <button type="button" data-kind="annotated" aria-pressed="false">Analysed</button>
+          <button type="button" data-kind="before" aria-pressed="false">Before</button>
+          <button type="button" data-kind="video" aria-pressed="false">▶ Video</button>
+        </div>
+        <span class="spacer"></span>
+        <button type="button" id="btnLive" hidden>↩ Latest photo</button>
+        <button type="button" class="primary" id="btnSnap">📷 New photo</button>
+      </div>
+      <div class="details" id="viewDetails" hidden></div>
+      <div class="fb" id="fb" hidden>
+        <span>Was this verdict right?</span>
+        <button type="button" class="up" data-fb="right" aria-pressed="false">👍 Right</button>
+        <button type="button" class="down" data-fb="wrong" aria-pressed="false">👎 Wrong</button>
+        <span id="fbNote"></span>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-say">
+      <h2 id="h-say">Speak through the feeder</h2>
+      <label class="lbl" for="sayText">Message</label>
+      <textarea id="sayText" maxlength="300" placeholder="Good boy! I'll be home soon…"></textarea>
+      <div class="chips" aria-label="Quick phrases">
+        <button type="button" data-say="Good boy!">Good boy!</button>
+        <button type="button" data-say="Dinner time!">Dinner time!</button>
+        <button type="button" data-say="Be good, I'll be home soon.">Home soon</button>
+        <button type="button" data-say="Who's a good puppy?">Good puppy?</button>
+      </div>
+      <div class="row"><span class="spacer"></span><button type="button" class="primary" id="btnSay">🔊 Speak</button></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-tr">
+      <h2 id="h-tr">Trends · last 30 days</h2>
+      <svg class="chart" id="chart" role="img" aria-label="Kibble flow per feed over the last 30 days"></svg>
+      <div class="legend"><span><span class="dot ok"></span> fed</span><span><span class="dot warn"></span> weak flow / unverified</span>
+        <span><span class="dot bad"></span> problem</span><span>- - weak-flow line (4.6 hits/s)</span></div>
+      <dl class="kv" id="trendStats" style="margin-top:10px"></dl>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="card" aria-labelledby="h-today">
+      <h2 id="h-today">Today</h2>
+      <div class="meals" id="todayMeals"><span class="muted">Loading…</span></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-tl">
+      <h2 id="h-tl">Feeds</h2>
+      <ul class="tl" id="timeline"><li class="tl-empty">Loading feeds…</li></ul>
+      <div class="row"><button type="button" id="btnMore" hidden>Load older</button><span class="spacer"></span>
+        <button type="button" id="btnRefresh">↻ Refresh</button></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-feed">
+      <h2 id="h-feed">Feed now</h2>
+      <div class="row" style="margin-top:0">
+        <div class="stepper" role="group" aria-label="Portions">
+          <button type="button" id="pMinus" aria-label="Fewer portions">−</button>
+          <output id="portions" aria-live="polite">1</output>
+          <button type="button" id="pPlus" aria-label="More portions">+</button>
+        </div>
+        <span class="check"><input type="checkbox" id="verify" checked><label for="verify">verify with camera + sound</label></span>
+      </div>
+      <div class="row">
+        <button type="button" class="feed" id="btnFeed">🍖 Feed</button>
+        <button type="button" id="btnCheck">🔍 Bowl check</button>
+      </div>
+      <p class="hint">Feeding drops real food. A verified feed shows up in the timeline in about a minute.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-hop">
+      <h2 id="h-hop">Hopper</h2>
+      <div class="bar" aria-hidden="true"><i id="hopBar" style="width:0%"></i></div>
+      <dl class="kv" id="hopStats" style="margin-top:10px"><dt>…</dt><dd></dd></dl>
+      <div class="row"><button type="button" id="btnRefill">🥣 I refilled the hopper</button></div>
+    </section>
+
+    <details class="card" id="schedCard">
+      <summary>Feeding schedule</summary>
+      <ul class="list" id="schedList"><li>Loading…</li></ul>
+    </details>
+
+    <details class="card" id="alertCard">
+      <summary>Alert history</summary>
+      <ul class="list" id="alertList"><li>Loading…</li></ul>
+    </details>
+
+    <section class="card" aria-labelledby="h-ml">
+      <h2 id="h-ml">Training data</h2>
+      <p class="hint" style="margin-top:0" id="mlStats">Label feeds so the detector keeps improving.</p>
+      <div class="row"><a class="btnlink" href="label">🏷 Open the labelling page</a> <a class="btnlink" href="ha">🏠 Home Assistant setup</a></div>
+      <div class="row">
+        <label class="check" for="exMedia">Export
+          <select id="exMedia" style="font:inherit;background:#0f1318;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px">
+            <option value="none">labels + measurements (small)</option>
+            <option value="audio" selected>+ audio (for training)</option>
+            <option value="all">everything (+ video &amp; photos, large)</option>
+          </select></label>
+        <label class="check" for="exDays">from
+          <select id="exDays" style="font:inherit;background:#0f1318;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px">
+            <option value="7">last 7 days</option><option value="30" selected>last 30 days</option><option value="0">all time</option>
+          </select></label>
+        <a class="btnlink" id="btnExport" href="export?media=audio&amp;days=30" download>⬇ Export for analysis</a>
+      </div>
+      <p class="hint">Downloads one <code>.tar.gz</code> (same layout as the pp-settings export). Send it to your assistant to analyse
+        or retrain; your labels are inside.</p>
+    </section>
+  </div>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="confirmDlg">
+  <form method="dialog">
+    <h3 id="cfTitle">Feed now?</h3>
+    <p id="cfText"></p>
+    <div class="row" style="justify-content:flex-end">
+      <button value="cancel">Cancel</button>
+      <button value="ok" class="feed" id="cfOk">Feed</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+let EVENTS = [], LIMIT = 40, current = null, kind = "after", portions = 1, toastTimer = 0, liveUrl = null;
+
+function toast(text, cls = "") {
+  const t = $("#toast"); t.className = "show " + cls; t.textContent = text;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), cls === "bad" ? 7000 : 4500);
+}
+class ApiError extends Error {}
+async function api(path, body) {
+  let res;
+  try {
+    res = await fetch(path, body === undefined ? { cache: "no-store" } :
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store" });
+  } catch {
+    throw new ApiError(navigator.onLine ? "Can't reach the server. Check your connection and try again." : "You're offline.");
+  }
+  let data = {};
+  try { data = await res.clone().json(); } catch {}
+  if (res.ok) return { res, data };
+  const msg = {
+    401: "Your login expired. Reload the page to log in again.",
+    403: "That action isn't allowed from the web page.",
+    409: "The feeder is busy recording a meal right now. Try again in a minute.",
+    429: "Slow down a little: too many requests. Wait a few seconds.",
+    502: "The watchdog isn't answering (restarting?). Try again shortly.",
+    503: "The watchdog isn't answering (restarting?). Try again shortly.",
+    504: "The feeder took too long to answer. Try again.",
+  }[res.status] || data.error || `Something went wrong (HTTP ${res.status}).`;
+  throw new ApiError(msg);
+}
+async function withBusy(btn, fn) {
+  btn.disabled = true;
+  try { await fn(); } catch (e) { toast(e instanceof ApiError ? e.message : "Unexpected error: " + e.message, "bad"); }
+  finally { btn.disabled = false; }
+}
+const dt = (ts) => new Date(ts);
+const fmtTime = (ts) => dt(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+function dayLabel(ts) {
+  const d = dt(ts), today = new Date(), y = new Date(); y.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return "Today";
+  if (d.toDateString() === y.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+}
+const dur = (s) => s == null ? "—" : s < 90 ? `${Math.round(s)} s` : s < 5400 ? `${Math.round(s / 60)} min` : `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min`;
+const TYPES = { scheduled_verify: "Scheduled meal", manual_dispense_verify: "Manual feed", auto_retry_verify: "Auto retry", bowl_check: "Bowl check" };
+
+function verdict(e) {
+  if (e.outcome === "bowl_check" || e.event_type === "bowl_check") return e.success ? ["info", "Food in bowl"] : ["warn", "Bowl looks empty"];
+  if (e.success && (e.flags || []).some((f) => f === "weak_flow" || f === "short_run" || f === "low_flow")) return ["warn", "Fed · weak flow"];
+  if (e.success) return ["ok", "Fed"];
+  return {
+    recording_cut_short: ["warn", "Couldn't verify (camera dropped)"],
+    camera_unavailable: ["warn", "Couldn't verify (camera offline)"],
+    motor_no_kibble: ["bad", "No kibble: clog or empty hopper?"],
+    no_motor: ["bad", "Feeder didn't run"],
+  }[e.outcome] || ["bad", "Not confirmed"];
+}
+
+function setViewer({ src, video, badges, empty, details, photos }) {
+  const img = $("#viewImg"), vid = $("#viewVid"), emptyEl = $("#viewEmpty");
+  if (!vid.paused) vid.pause();
+  vid.hidden = !video; img.hidden = !!video;
+  if (video) {
+    $("#viewBadge").innerHTML = badges.map((b) => `<span>${esc(b)}</span>`).join("");
+    $("#viewDetails").hidden = !details; $("#viewDetails").textContent = details || "";
+    $("#kindSeg").hidden = !photos; markKinds(photos);
+    emptyEl.hidden = true; img.removeAttribute("src");
+    vid.onerror = () => { vid.hidden = true; emptyEl.hidden = false; emptyEl.textContent = "This video couldn't be loaded (it may have been removed by footage retention)."; };
+    if (vid.getAttribute("src") !== video) vid.src = video;
+    return;
+  }
+  vid.removeAttribute("src"); vid.load();
+  $("#viewBadge").innerHTML = badges.map((b) => `<span>${esc(b)}</span>`).join("");
+  $("#viewDetails").hidden = !details; $("#viewDetails").textContent = details || "";
+  $("#kindSeg").hidden = !photos; markKinds(photos);
+  if (empty) { img.removeAttribute("src"); img.alt = ""; emptyEl.hidden = false; emptyEl.textContent = empty; return; }
+  emptyEl.hidden = true; img.classList.add("loading"); img.alt = badges.join(", ");
+  img.onload = () => img.classList.remove("loading");
+  img.onerror = () => { img.classList.remove("loading"); img.removeAttribute("src"); emptyEl.hidden = false;
+    emptyEl.textContent = "This photo couldn't be loaded (it may have been removed by footage retention)."; };
+  img.src = src;
+}
+function markKinds(kinds) {
+  if (!kinds) return;
+  $("#kindSeg").querySelectorAll("button").forEach((b) => {
+    b.disabled = !kinds.includes(b.dataset.kind); b.setAttribute("aria-pressed", String(b.dataset.kind === kind));
+  });
+}
+async function showLive(fresh = false) {
+  $("#fb").hidden = true;
+  current = null; $("#btnLive").hidden = true; markCurrent();
+  const res = await fetch("snapshot.jpg?" + (fresh ? "fresh=1&" : "") + "t=" + Date.now(), { cache: "no-store" }).catch(() => null);
+  if (!res) { setViewer({ badges: ["Latest photo"], empty: "Can't reach the server for a photo right now." }); return null; }
+  if (res.status === 401) { setViewer({ badges: ["Latest photo"], empty: "Your login expired. Reload the page." }); return null; }
+  if (!res.ok) { setViewer({ badges: ["Latest photo"], empty: "No photo yet. Tap “New photo” to take one." }); return null; }
+  const taken = res.headers.get("X-Snapshot-Taken");
+  const when = taken ? new Date(taken * 1000) : null;
+  if (liveUrl) URL.revokeObjectURL(liveUrl);
+  liveUrl = URL.createObjectURL(await res.blob());
+  setViewer({ src: liveUrl, badges: ["📷 Latest photo", when ? `${dayLabel(when)} ${fmtTime(when)}` : ""].filter(Boolean) });
+  return when;
+}
+function showEvent(e) {
+  current = e; $("#btnLive").hidden = false; markCurrent();
+  const [cls, text] = verdict(e);
+  const kinds = [...e.photos, ...(e.has_video ? ["video"] : [])];
+  if (!kinds.includes(kind)) kind = e.photos[0] || (e.has_video ? "video" : "after");
+  showFeedback(e);
+  const badges = [`${dayLabel(e.timestamp)} ${fmtTime(e.timestamp)}`, `${cls === "ok" ? "✓" : cls === "bad" ? "✗" : "•"} ${text}`,
+    e.portions ? `${e.portions} portion${e.portions > 1 ? "s" : ""}` : ""].filter(Boolean);
+  const details = [TYPES[e.event_type] || e.event_type, ...(e.diagnosis || "").replaceAll("**", "").split(" | ")].filter(Boolean).join("\n");
+  if (!kinds.length) { setViewer({ badges, details, photos: [], empty: "No photos or video kept for this feed (footage retention, or the camera didn't capture one)." }); return; }
+  if (kind === "video") { setViewer({ video: `events/${e.id}/video.mp4`, badges, details, photos: kinds }); return; }
+  setViewer({ src: `events/${e.id}/${kind}.jpg`, badges, details, photos: kinds });
+}
+function showFeedback(e) {
+  $("#fb").hidden = false;
+  $("#fb").querySelectorAll("button[data-fb]").forEach((b) => b.setAttribute("aria-pressed", String(e.feedback === b.dataset.fb)));
+  $("#fbNote").textContent = e.feedback ? "Saved for training — thanks!" : "";
+}
+$("#kindSeg").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button[data-kind]"); if (!b || b.disabled || !current) return;
+  kind = b.dataset.kind; showEvent(current);
+});
+$("#btnLive").onclick = () => showLive(false);
+$("#fb").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button[data-fb]"); if (!b || !current) return;
+  const e = current, verdict = e.feedback === b.dataset.fb ? null : b.dataset.fb;
+  withBusy(b, async () => {
+    await api("webhook/feedback", { id: e.id, verdict });
+    e.feedback = verdict; e.labeled = true; showFeedback(e); renderMl();
+    if (verdict) toast(verdict === "right" ? "👍 Saved: verdict was right" : "👎 Saved: verdict was wrong — this helps training", "ok");
+  });
+});
+$("#btnSnap").onclick = (ev) => withBusy(ev.currentTarget, async () => {
+  toast("Taking a photo… (5–10 s)");
+  const asked = Date.now();
+  const when = await showLive(true);
+  if (when && when.getTime() >= asked - 15000) toast("✓ New photo", "ok");
+  else if (when) toast("Showing the last photo: the feeder was busy, or you asked again within 10 s.", "warn");
+});
+
+function markCurrent() {
+  document.querySelectorAll(".ev").forEach((b) => b.setAttribute("aria-current", String(!!current && +b.dataset.id === current.id)));
+}
+function renderTimeline() {
+  const ul = $("#timeline");
+  if (!EVENTS.length) { ul.innerHTML = `<li class="tl-empty">No feeds recorded yet.</li>`; return; }
+  let html = "", lastDay = "";
+  for (const e of EVENTS) {
+    const d = dayLabel(e.timestamp);
+    if (d !== lastDay) { html += `<li class="day">${esc(d)}</li>`; lastDay = d; }
+    const [cls, text] = verdict(e);
+    const sub = [TYPES[e.event_type] || e.event_type, e.portions ? `${e.portions} portion${e.portions > 1 ? "s" : ""}` : ""].filter(Boolean).join(" · ");
+    html += `<li><button class="ev" data-id="${+e.id}" aria-current="false">
+      <span class="dot ${cls}" aria-hidden="true"></span><span class="t">${esc(fmtTime(e.timestamp))}</span>
+      <span class="what">${esc(text)}<small>${esc(sub)}</small></span>
+      <span class="cam" title="${e.photos.length ? "has photos" : "no photos kept"}">${e.photos.length ? "📷" : ""}</span></button></li>`;
+  }
+  ul.innerHTML = html; markCurrent();
+}
+$("#timeline").addEventListener("click", (ev) => {
+  const b = ev.target.closest(".ev"); if (!b) return;
+  const e = EVENTS.find((x) => x.id === +b.dataset.id); if (!e) return;
+  showEvent(e);
+  if (matchMedia("(max-width: 899px)").matches) $(".viewer").scrollIntoView({ behavior: "smooth", block: "center" });
+});
+async function loadEvents() {
+  const { data } = await api(`events?limit=${LIMIT}`);
+  EVENTS = data.events || []; renderTimeline();
+  $("#btnMore").hidden = EVENTS.length < LIMIT || LIMIT >= 200;
+  if (current) { const fresh = EVENTS.find((x) => x.id === current.id); if (fresh) current = fresh; }
+}
+$("#btnMore").onclick = (ev) => withBusy(ev.currentTarget, async () => { LIMIT = Math.min(200, LIMIT + 40); await loadEvents(); });
+
+let HOPPER = null;
+async function loadStatus() {
+  const [h, hop] = await Promise.allSettled([api("health"), api("hopper")]);
+  const dot = $("#statusDot"), text = $("#statusText");
+  if (h.status === "fulfilled") {
+    const v = h.value.data;
+    if (v.busy) { dot.className = "dot warn"; text.textContent = "Recording a meal check now"; }
+    else {
+      dot.className = "dot ok";
+      const next = v.next_meal_in_sec != null ? new Date(Date.now() + v.next_meal_in_sec * 1000) : null;
+      text.textContent = next ? `Watching · next meal ${fmtTime(next)} (in ${dur(v.next_meal_in_sec)})` : "Watching";
+    }
+  } else { dot.className = "dot bad"; text.textContent = h.reason?.message || "Offline"; }
+  HOPPER = hop.status === "fulfilled" ? hop.value.data : null;
+  renderToday(); renderHopper(); renderTrends(); renderMl();
+}
+const meals = () => EVENTS.filter((e) => e.event_type !== "bowl_check");
+function renderToday() {
+  const today = meals().filter((e) => dayLabel(e.timestamp) === "Today").reverse();
+  $("#todayMeals").innerHTML = today.length ? today.map((e) => {
+    const [cls, t] = verdict(e);
+    return `<button type="button" class="meal" data-id="${+e.id}" style="text-align:left"><b>${esc(fmtTime(e.timestamp))}</b>
+      <span><span class="dot ${cls}" style="margin-right:6px"></span>${esc(t)} · ${esc(e.portions)}p</span></button>`;
+  }).join("") : `<span class="muted">No meals yet today.</span>`;
+}
+$("#todayMeals").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-id]"); if (!b) return;
+  const e = EVENTS.find((x) => x.id === +b.dataset.id); if (e) showEvent(e);
+});
+function dailyPortions() {
+  const wk = meals().filter((e) => e.success && Date.now() - dt(e.timestamp) < 7 * 864e5);
+  const days = Math.max(1, Math.min(7, (Date.now() - Math.min(...wk.map((e) => +dt(e.timestamp)), Date.now())) / 864e5));
+  return wk.length ? wk.reduce((a, e) => a + (+e.portions || 0), 0) / days : 0;
+}
+function renderHopper() {
+  const st = $("#hopStats"), bar = $("#hopBar");
+  if (!HOPPER || !HOPPER.known) { bar.style.width = "0%"; st.innerHTML = `<dt>Status</dt><dd>Unknown — tap “I refilled the hopper” after filling it to start the estimate.</dd>`; return; }
+  const pct = Math.max(0, Math.min(100, +HOPPER.percent_left || 0)), perDay = dailyPortions();
+  bar.style.width = pct + "%";
+  const daysLeft = perDay > 0 ? HOPPER.portions_left / perDay : null;
+  st.innerHTML = `<dt>Left</dt><dd>~${esc(Math.round(pct))}% (${esc(HOPPER.portions_left)} of ${esc(HOPPER.capacity_portions)} portions)</dd>
+    <dt>Lasts</dt><dd>${daysLeft == null ? "—" : `about ${esc(daysLeft.toFixed(daysLeft < 3 ? 1 : 0))} days at ~${esc(Math.round(perDay))} portions/day`}</dd>
+    <dt>Refilled</dt><dd>${HOPPER.refilled_at ? esc(dayLabel(HOPPER.refilled_at) + " " + fmtTime(HOPPER.refilled_at)) : "—"}</dd>`;
+}
+$("#btnRefill").onclick = (ev) => withBusy(ev.currentTarget, async () => {
+  if (!(await confirmDialog("Hopper refilled?", "Resets the food-left estimate to a full hopper.", "🥣 Yes, refilled"))) return;
+  await api("webhook/refill", {});
+  toast("✓ Hopper estimate reset to full", "ok"); await loadStatus();
+});
+function renderTrends() {
+  const svg = $("#chart"), W = svg.clientWidth || 500, H = 170, pad = { l: 30, r: 8, t: 8, b: 20 };
+  const since = Date.now() - 30 * 864e5;
+  const pts = meals().filter((e) => +dt(e.timestamp) >= since && e.tings_per_sec != null).reverse();
+  if (!pts.length) { svg.innerHTML = `<text x="10" y="90">No feeds with sound measurements in the last 30 days yet.</text>`; $("#trendStats").innerHTML = ""; return; }
+  const maxY = Math.max(10, ...pts.map((e) => e.tings_per_sec)) * 1.1;
+  const x = (t) => pad.l + ((t - since) / (Date.now() - since)) * (W - pad.l - pad.r);
+  const y = (v) => H - pad.b - (v / maxY) * (H - pad.t - pad.b);
+  const col = { ok: "#3ecf8e", warn: "#f5b84a", bad: "#ff6b6b", info: "#8fa8ff" };
+  let g = `<line x1="${pad.l}" x2="${W - pad.r}" y1="${y(4.6)}" y2="${y(4.6)}" stroke="#f5b84a" stroke-dasharray="4 4" opacity=".7"/>`;
+  for (const v of [0, 5, 10, 15].filter((v) => v < maxY)) g += `<text x="2" y="${y(v) + 4}">${v}</text><line x1="${pad.l}" x2="${W - pad.r}" y1="${y(v)}" y2="${y(v)}" stroke="#272e38"/>`;
+  for (let d = 0; d <= 30; d += 7) { const t = Date.now() - d * 864e5; g += `<text x="${x(t) - 14}" y="${H - 4}">${d ? `-${d}d` : "now"}</text>`; }
+  g += `<polyline fill="none" stroke="#7cb3ff" stroke-opacity=".35" points="${pts.map((e) => `${x(+dt(e.timestamp))},${y(e.tings_per_sec)}`).join(" ")}"/>`;
+  for (const e of pts) { const [cls] = verdict(e);
+    g += `<circle cx="${x(+dt(e.timestamp))}" cy="${y(e.tings_per_sec)}" r="4" fill="${col[cls]}"><title>${esc(dayLabel(e.timestamp) + " " + fmtTime(e.timestamp))}: ${e.tings_per_sec} hits/s</title></circle>`; }
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.innerHTML = g;
+  const m30 = meals().filter((e) => +dt(e.timestamp) >= since);
+  const avg = (a) => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null;
+  const recent = avg(pts.slice(-6).map((e) => e.tings_per_sec)), older = avg(pts.slice(0, -6).map((e) => e.tings_per_sec));
+  const motor = avg(m30.filter((e) => e.motor_sec).map((e) => e.motor_sec / Math.max(1, e.portions || 1)));
+  $("#trendStats").innerHTML = `<dt>Confirmed</dt><dd>${m30.filter((e) => e.success).length} of ${m30.length} feeds</dd>
+    <dt>Kibble flow</dt><dd>${recent ? recent.toFixed(1) : "—"} hits/s lately${older ? ` (was ${older.toFixed(1)})` : ""}${recent && older && recent < older * 0.8 ? ' <span class="warn">↓ dropping: hopper low or a jam forming?</span>' : ""}</dd>
+    <dt>Motor</dt><dd>${motor ? motor.toFixed(1) + " s per portion" : "—"}</dd>`;
+}
+addEventListener("resize", () => { clearTimeout(renderTrends.t); renderTrends.t = setTimeout(renderTrends, 200); });
+function renderMl() {
+  const n = EVENTS.filter((e) => e.labeled).length, fb = EVENTS.filter((e) => e.feedback);
+  $("#mlStats").textContent = `${n} of the last ${EVENTS.length} feeds have labels` +
+    (fb.length ? ` · quick feedback: ${fb.filter((e) => e.feedback === "right").length} 👍 / ${fb.filter((e) => e.feedback === "wrong").length} 👎` : "") +
+    ". Use 👍/👎 under any feed, or the labelling page for details.";
+}
+async function loadSchedule() {
+  const ul = $("#schedList");
+  try {
+    const { data } = await api("schedule");
+    const slots = (data.slots || []).filter((m) => m.enabled);
+    ul.innerHTML = slots.length ? slots.map((m) => `<li><b>${esc(m.time_str || m.time || "")}</b> · ${esc(m.portions)} portions<small>${esc(m.days_str || m.days || "every day")}</small></li>`).join("")
+      : "<li>No enabled meals on the feeder.</li>";
+  } catch (e) { ul.innerHTML = `<li>${esc(e.message)}</li>`; }
+}
+async function loadAlerts() {
+  const ul = $("#alertList");
+  try {
+    const { data } = await api("alerts?limit=40");
+    const a = data.alerts || [];
+    ul.innerHTML = a.length ? a.map((x) => `<li><span class="dot ${x.urgent ? "bad" : "warn"}" style="margin-right:6px"></span><b>${esc(x.title)}</b>
+      <small>${esc(dayLabel(x.timestamp) + " " + fmtTime(x.timestamp))}${x.message ? " · " + esc(String(x.message).split("\n")[0]).slice(0, 160) : ""}</small></li>`).join("")
+      : "<li>No alerts sent yet (recorded from v0.6 on).</li>";
+  } catch (e) { ul.innerHTML = `<li>${esc(e.message)}</li>`; }
+}
+$("#schedCard").addEventListener("toggle", (ev) => { if (ev.currentTarget.open) loadSchedule(); });
+const updExport = () => { $("#btnExport").href = `export?media=${$("#exMedia").value}&days=${$("#exDays").value}`; };
+$("#exMedia").onchange = updExport; $("#exDays").onchange = updExport;
+$("#btnExport").addEventListener("click", () => toast("Preparing the export… the download starts in a few seconds (large exports take a while)."));
+$("#alertCard").addEventListener("toggle", (ev) => { if (ev.currentTarget.open) loadAlerts(); });
+async function refreshAll() {
+  try { await loadEvents(); } catch (e) { $("#timeline").innerHTML = `<li class="tl-empty">${esc(e.message)}</li>`; }
+  await loadStatus();
+}
+$("#btnRefresh").onclick = (ev) => withBusy(ev.currentTarget, refreshAll);
+
+document.querySelectorAll("[data-say]").forEach((b) => b.onclick = () => { $("#sayText").value = b.dataset.say; $("#sayText").focus(); });
+$("#btnSay").onclick = (ev) => withBusy(ev.currentTarget, async () => {
+  const text = $("#sayText").value.trim();
+  if (!text) { toast("Type a message first.", "warn"); $("#sayText").focus(); return; }
+  toast("Speaking… (a few seconds)");
+  await api("webhook/say", { text });
+  toast("✓ Spoken on the feeder speaker", "ok");
+});
+
+const setPortions = (n) => { portions = Math.max(1, Math.min(20, n)); $("#portions").textContent = portions; };
+$("#pMinus").onclick = () => setPortions(portions - 1);
+$("#pPlus").onclick = () => setPortions(portions + 1);
+function confirmDialog(title, text, okLabel) {
+  const dlg = $("#confirmDlg");
+  if (typeof dlg.showModal !== "function") return Promise.resolve(confirm(`${title}\n${text}`));
+  $("#cfTitle").textContent = title; $("#cfText").textContent = text; $("#cfOk").textContent = okLabel;
+  dlg.returnValue = ""; dlg.showModal();
+  return new Promise((r) => dlg.addEventListener("close", () => r(dlg.returnValue === "ok"), { once: true }));
+}
+function pollAfterAction() { [35, 70, 110].forEach((s) => setTimeout(() => refreshAll().catch(() => {}), s * 1000)); }
+$("#btnFeed").onclick = (ev) => withBusy(ev.currentTarget, async () => {
+  const verify = $("#verify").checked;
+  const ok = await confirmDialog(`Feed ${portions} portion${portions > 1 ? "s" : ""}?`,
+    verify ? "Real food will drop. The camera and microphone will verify it (about a minute)." : "Real food will drop (no verification).", "🍖 Feed");
+  if (!ok) return;
+  const { data } = await api("webhook/feed", { portions, verify });
+  toast(verify ? `✓ Feeding ${portions} portion(s): it'll appear in the timeline shortly` : `✓ ${data.status || "sent"}: ${portions} portion(s)`, "ok");
+  pollAfterAction();
+});
+$("#btnCheck").onclick = (ev) => withBusy(ev.currentTarget, async () => {
+  await api("webhook/check", {});
+  toast("✓ Bowl check started: result in about a minute", "ok");
+  pollAfterAction();
+});
+
+setPortions(1);
+showLive(false);
+refreshAll();
+setInterval(() => { if (document.visibilityState === "visible") refreshAll().catch(() => {}); }, 60000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refreshAll().catch(() => {}); });
+</script>
+<script src="/nav.js" onerror="this.remove()"></script>
+</body>
+</html>

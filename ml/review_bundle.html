@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poor Puppy · ML bundle review</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #111418; --panel: #1a1f26; --line: #2a313b; --text: #e6e9ee; --muted: #8b95a3;
+    --ok: #3ecf8e; --bad: #ff6b6b; --warn: #ffb547; --accent: #6aa8ff;
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); display: grid; grid-template-columns: 300px 1fr; height: 100dvh; }
+  aside { border-right: 1px solid var(--line); overflow-y: auto; }
+  aside header { position: sticky; top: 0; background: var(--bg); padding: 10px 12px; border-bottom: 1px solid var(--line); z-index: 1; }
+  aside h1 { font-size: 15px; margin: 0 0 4px; }
+  .muted { color: var(--muted); font-size: 12px; }
+  #progress { margin-top: 6px; font-size: 12px; }
+  #list { list-style: none; margin: 0; padding: 0; }
+  #list button { all: unset; box-sizing: border-box; display: block; width: 100%; padding: 8px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  #list button:hover { background: #161b22; }
+  #list button[aria-current="true"] { background: #1f2a3a; box-shadow: inset 3px 0 var(--accent); }
+  #list button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .row1 { display: flex; justify-content: space-between; gap: 6px; }
+  .badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+  .b { font-size: 10.5px; padding: 1px 6px; border-radius: 9px; background: #262d37; color: var(--muted); }
+  .b.ok { background: #143326; color: var(--ok); } .b.bad { background: #3a1919; color: var(--bad); }
+  .b.warn { background: #3a2c12; color: var(--warn); } .b.lab { background: #18273d; color: var(--accent); }
+  main { overflow-y: auto; padding: 14px 18px 40px; }
+  h2 { margin: 0 0 2px; font-size: 18px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr); gap: 14px; margin-top: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .card h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  video { width: 100%; max-height: 52vh; background: #000; border-radius: 6px; }
+  .thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .thumbs figure { margin: 0; } .thumbs figcaption { font-size: 11px; color: var(--muted); }
+  .thumbs img { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; border-radius: 4px; cursor: zoom-in; display: block; background: #000; }
+  .missing { padding: 18px 6px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 4px; font-size: 12px; }
+  audio { width: 100%; }
+  .specwrap { position: relative; margin-top: 6px; cursor: crosshair; }
+  #spec { width: 100%; height: 190px; display: block; image-rendering: pixelated; border-radius: 4px; background: #000; }
+  #playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; pointer-events: none; left: 0; }
+  .specaxis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  table.kv { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.kv td { padding: 3px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.kv td:first-child { color: var(--muted); width: 44%; }
+  .diag { white-space: pre-wrap; font-size: 12px; color: #c9d1db; margin-top: 8px; max-height: 160px; overflow: auto; }
+  fieldset { border: 1px solid var(--line); border-radius: 8px; margin: 0 0 8px; padding: 6px 10px 8px; }
+  legend { font-size: 12.5px; padding: 0 4px; }
+  legend kbd, .keys kbd { font: 11px ui-monospace, monospace; background: #262d37; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg label { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 14px; cursor: pointer; font-size: 13px; }
+  .seg label:has(input:checked) { border-color: var(--accent); background: #18273d; }
+  .seg input { accent-color: var(--accent); margin: 0; }
+  .sys { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+  .sys.mismatch { color: var(--bad); font-weight: 600; }
+  textarea { width: 100%; min-height: 60px; background: #0e1116; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px; font: inherit; }
+  .actions { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  button.primary, button.sec { border: 0; border-radius: 8px; padding: 7px 14px; font: inherit; cursor: pointer; }
+  button.primary { background: var(--accent); color: #08111f; font-weight: 600; }
+  button.sec { background: #262d37; color: var(--text); }
+  #saved { font-size: 12px; color: var(--ok); }
+  .keys { font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.9; }
+  dialog { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 96vh; }
+  dialog::backdrop { background: rgb(0 0 0 / .85); }
+  dialog img { max-width: 96vw; max-height: 96vh; display: block; }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+  /* timeline segments */
+  .tlbar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .tladd { border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--text); border-radius: 14px; padding: 3px 10px; font: inherit; font-size: 12.5px; cursor: pointer; }
+  .tladd:hover { background: color-mix(in srgb, var(--c) 30%, transparent); }
+  .track { --lane-h: 28px; position: relative; height: calc(var(--lanes) * var(--lane-h)); margin-top: 8px; background: #0e1116; border: 1px solid var(--line); border-radius: 6px; touch-action: none; cursor: crosshair; user-select: none; }
+  .lane { position: absolute; left: 0; right: 0; top: calc(var(--i) * var(--lane-h)); height: var(--lane-h); border-bottom: 1px dashed #1f252e; pointer-events: none; }
+  .lane span { position: absolute; right: 6px; top: 6px; font-size: 10.5px; color: #4b5563; }
+  .segi { position: absolute; top: calc(var(--i) * var(--lane-h) + 3px); height: calc(var(--lane-h) - 6px); background: color-mix(in srgb, var(--c) 55%, transparent); border: 1px solid var(--c); border-radius: 4px; cursor: grab; overflow: hidden; min-width: 26px; container-type: inline-size; }
+  .segi.sel { outline: 2px solid #fff; z-index: 2; }
+  .segi.auto { border-style: dashed; background: color-mix(in srgb, var(--c) 35%, transparent); }
+  .segi.open { animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { background: color-mix(in srgb, var(--c) 85%, transparent); } }
+  .segi:active { cursor: grabbing; }
+  .segi .txt { position: absolute; inset: 0 12px; display: flex; align-items: center; font-size: 10.5px; white-space: nowrap; pointer-events: none; overflow: hidden; }
+  @container (max-width: 64px) { .segi .txt { display: none; } }
+  /* resize handles: pinned to BOTH ends (always visible), wide hit area with a visible grip */
+  .segi .hl, .segi .hr { position: absolute; top: 0; bottom: 0; width: 11px; cursor: ew-resize; z-index: 1; background: rgb(255 255 255 / .28)
+    linear-gradient(90deg, transparent 3px, rgb(255 255 255 / .9) 3px 4px, transparent 4px 6px, rgb(255 255 255 / .9) 6px 7px, transparent 7px) center / 100% 60% no-repeat; }
+  .segi .hl { left: 0; } .segi .hr { right: 0; }
+  .segi .hl:hover, .segi .hr:hover { background-color: rgb(255 255 255 / .55); }
+  .segi .x { all: unset; position: absolute; right: 13px; top: 50%; translate: 0 -50%; z-index: 1; cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; color: #fff; display: none; }
+  .segi.sel .x, .segi:hover .x { display: block; }
+  @container (max-width: 40px) { .segi .x { display: none !important; } }
+  #tlplayhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; pointer-events: none; left: 0; z-index: 3; }
+  .segedit { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 12.5px; }
+  .segedit[hidden] { display: none; }
+  .segedit b { color: var(--c); }
+  .segedit input { width: 72px; background: #0e1116; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 2px 4px; font: inherit; }
+  button.small { padding: 3px 9px; font-size: 12px; }
+</style>
+</head>
+<body>
+<aside>
+  <header>
+    <h1>🐶 ML bundle review</h1>
+    <div class="muted" id="bundleName">loading…</div>
+    <div id="progress"></div>
+  </header>
+  <ul id="list"></ul>
+</aside>
+
+<main id="main"><p class="muted">Loading events…</p></main>
+
+<dialog id="zoom" closedby="any"><img alt=""></dialog>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+let EVENTS = [], LABELS = {}, cur = 0, specToken = 0, lastPlayer = null;
+
+// Label questions. `sys(e)` = what the watchdog decided; `match(label, sys)` false => highlighted mismatch.
+const eq = (l, s) => l === s;
+const Q = [
+  // ---- what only a human can see (label these)
+  { id: "puppy", text: "Where is the puppy? (most important point in the clip)", keys: "D",
+    opts: [["not_visible", "Not in view"], ["in_view", "In view, not at bowl"], ["at_bowl", "Head at / over the bowl"]],
+    sys: (e) => (e.dog_in_bowl ? "at_bowl" : "not at bowl"),
+    match: (l, s) => (s === "at_bowl" ? l === "at_bowl" : l !== "at_bowl") },
+  { id: "lighting", text: "Lighting in the video?", keys: "L",
+    opts: [["daylight", "Daylight (colour)"], ["lights", "Room lights (colour)"], ["dim", "Dim / dark"], ["ir", "IR night vision (B&W)"], ["glare", "Glare / backlit"]],
+    sys: (e) => (e.infrared_mode ? "ir" : "colour"),
+    match: (l, s) => (s === "ir" ? l === "ir" : l !== "ir") },
+  { id: "food_visible_after", text: "Can you see kibble in the bowl in the AFTER image? (any amount, not the change)", keys: "F",
+    opts: [["yes", "Yes"], ["no", "No"], ["cant_tell", "Can't tell"]], sys: (e) => (e.food_increased ? "yes" : null),
+    match: (l, s) => l === "cant_tell" || l === s },
+  // ---- sound side: pre-filled from the audio, only change if clearly wrong
+  { id: "food_dispensed", text: "Food dispensed? (pre-filled from the audio)", keys: "1 / 2 / 3", audio: true,
+    opts: [["yes", "Yes"], ["partial", "Partial"], ["no", "No"]],
+    sys: (e) => (e.success ? "yes" : "no"), match: (l, s) => l === s || (l === "partial" && s === "yes") },
+  { id: "problem", text: "Problem during the feed? (pre-filled)", keys: "C", audio: true,
+    opts: [["none", "No problem"], ["jam", "Clog / jam"], ["empty_hopper", "Empty hopper"], ["cant_tell", "Can't tell"]],
+    sys: (e) => (e.clog_detected ? "problem" : "none"),
+    match: (l, s) => l === "cant_tell" || (s === "none" ? l === "none" : l !== "none") },
+];
+// Older labels: clog yes/no -> problem; dog_actual / dog_in_view / dog_at_bowl -> puppy; ir_actual yes -> lighting ir.
+function normalizeLabel(lab) {
+  if (!lab) return lab;
+  const out = { ...lab };
+  if (out.problem == null && out.clog === "no") out.problem = "none";
+  const atBowl = out.dog_at_bowl ?? out.dog_actual;
+  if (out.puppy == null) {
+    if (atBowl === "yes") out.puppy = "at_bowl";
+    else if (out.dog_in_view === "yes") out.puppy = "in_view";
+    else if (out.dog_in_view === "no") out.puppy = "not_visible";
+  }
+  if (out.lighting == null && out.ir_actual === "yes") out.lighting = "ir";
+  return out;
+}
+// Unlabelled clip: pre-fill what the machine knows reliably (you double-check): sound verdict, and
+// lighting (IR frames are exactly colourless, so the IR flag is trustworthy; colour -> by time of day).
+// The puppy is left for you: the system's dog detector is the unreliable part.
+function prefill(e, lab) {
+  if (lab && Object.keys(lab).length) return lab;
+  const hour = new Date(e.timestamp).getHours();
+  return {
+    food_dispensed: e.success ? "yes" : "no",
+    problem: e.clog_detected ? null : "none",
+    lighting: e.infrared_mode ? "ir" : (hour >= 7 && hour < 18 ? "daylight" : "lights"),
+  };
+}
+const keyOf = (e) => `${e.timestamp}|${e.id}`;
+const fmtTs = (ts) => { const d = new Date(ts); return isNaN(d) ? ts : d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }); };
+const num = (v, d = 1) => (v == null || v === "" ? "—" : Number(v).toFixed(d));
+// `warnings` is {short_run, low_flow, expected_motor_sec} in v0.5 DBs (older rows may hold a list).
+function fmtWarnings(w) {
+  if (!w) return "—";
+  if (Array.isArray(w)) return w.join(", ") || "—";
+  if (typeof w !== "object") return String(w);
+  const on = Object.entries(w).filter(([k, v]) => v === true).map(([k]) => k.toUpperCase());
+  const exp = w.expected_motor_sec != null ? `expected motor ≈ ${num(w.expected_motor_sec)} s` : "";
+  return [on.join(", ") || "none", exp].filter(Boolean).join(" · ");
+}
+
+function mismatches(e, lab) {
+  lab = normalizeLabel(lab);
+  if (!lab) return [];
+  return Q.filter((q) => { const s = q.sys(e), l = lab[q.id]; return s != null && l && !q.match(l, s); }).map((q) => q.id);
+}
+
+function renderList() {
+  const labeled = EVENTS.filter((e) => LABELS[keyOf(e)]).length;
+  const mm = Object.fromEntries(Q.map((q) => [q.id, 0]));
+  EVENTS.forEach((e) => mismatches(e, LABELS[keyOf(e)]).forEach((m) => mm[m]++));
+  $("#progress").innerHTML = `<b>${labeled}/${EVENTS.length}</b> labeled · system wrong on: ` +
+    `verdict ${mm.food_dispensed}, problem ${mm.problem}, IR ${mm.lighting}, dog ${mm.puppy}`;
+  $("#list").innerHTML = EVENTS.map((e, i) => {
+    const lab = LABELS[keyOf(e)], mmx = mismatches(e, lab);
+    const b = [
+      e.success ? `<span class="b ok">OK</span>` : `<span class="b bad">FAIL</span>`,
+      e.clog_detected ? `<span class="b bad">CLOG</span>` : "",
+      e.infrared_mode ? `<span class="b warn">IR</span>` : "",
+      e.dog_in_bowl ? `<span class="b warn">DOG</span>` : "",
+      lab ? `<span class="b lab">✓ labeled</span>` : "",
+      mmx.length ? `<span class="b bad">≠ ${mmx.length}</span>` : "",
+    ].join("");
+    return `<li><button data-i="${i}" aria-current="${i === cur}">
+      <div class="row1"><span>#${e.id} · ${esc(fmtTs(e.timestamp))}</span><span class="muted">${e.portions ?? ""}p</span></div>
+      <div class="muted">${esc(e.event_type)} · ${esc(e.outcome || "")}</div><div class="badges">${b}</div></button></li>`;
+  }).join("");
+}
+
+function media(url, alt) {
+  return url ? `<img src="${url}" alt="${esc(alt)}" loading="lazy" data-zoom>` : `<div class="missing">no ${esc(alt)}</div>`;
+}
+
+function renderEvent() {
+  const e = EVENTS[cur]; if (!e) return;
+  const d = e.details || {}, a = d.audio || {}, v = d.visual || {}, lab = prefill(e, normalizeLabel(LABELS[keyOf(e)])) || {};
+  const m = e.media;
+  const kv = (rows) => `<table class="kv">${rows.map(([k, val]) => `<tr><td>${esc(k)}</td><td>${esc(val)}</td></tr>`).join("")}</table>`;
+  $("#main").innerHTML = `
+    <h2>Event #${e.id} · ${esc(fmtTs(e.timestamp))}</h2>
+    <div class="muted">${esc(e.event_type)} · ${e.portions ?? "?"} portions · transport ${esc(e.transport || d.transport || "?")} · outcome <b>${esc(e.outcome || "?")}</b> · ${cur + 1}/${EVENTS.length}</div>
+    <div class="grid">
+      <div>
+        <div class="card"><h3>Video</h3>
+          ${m.video_clip ? `<video src="${m.video_clip}" controls preload="metadata" playsinline></video>` : `<div class="missing">no video clip</div>`}
+          <div class="thumbs">
+            <figure>${media(m.before_image, "before image")}<figcaption>Before</figcaption></figure>
+            <figure>${media(m.after_image, "after image")}<figcaption>After</figcaption></figure>
+            <figure>${media(m.annotated_image, "annotated image")}<figcaption>Annotated (what the system saw)</figcaption></figure>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px"><h3>Audio · spectrogram + timeline (lines at 600 / 1500 / 2500 Hz)</h3>
+          ${m.audio_clip ? `<audio id="aud" src="${m.audio_clip}" controls preload="auto"></audio>
+            <div class="specwrap" id="specwrap"><canvas id="spec"></canvas><div id="playhead"></div></div>
+            <div class="specaxis"><span>0 s</span><span id="specinfo">decoding…</span><span id="specdur"></span></div>`
+          : `<div class="missing">no audio clip</div>`}
+          ${TIMELINE_HTML}
+        </div>
+      </div>
+      <div>
+        <form class="card" id="labelForm"><h3>Your ground truth</h3>
+          ${Q.map((q, qi) => { const s = q.sys(e); return `${q.audio && !Q[qi - 1]?.audio ? `<div class="sys" style="margin:12px 0 6px">🔊 Sound side: pre-filled from the audio, only change it if it's clearly wrong</div>` : ""}<fieldset><legend>${esc(q.text)} <kbd>${q.keys}</kbd></legend>
+            <div class="seg">${q.opts.map(([val, txt]) => `<label><input type="radio" name="${q.id}" value="${val}" ${lab[q.id] === val ? "checked" : ""}> ${txt}</label>`).join("")}</div>
+            ${q.marker ? `<div class="sys">Mark <i>when</i> it happens with the timeline under the spectrogram (Clog / jam, Empty hopper buttons).</div>` : ""}
+            <div class="sys" data-sys="${q.id}">system said: ${s ? `<b>${esc(s)}</b>` : "—"}</div></fieldset>`; }).join("")}
+          <label for="notes" class="muted">Notes (what you hear / see)</label>
+          <textarea id="notes" name="notes">${esc(lab.notes || "")}</textarea>
+          <div class="actions">
+            <button type="submit" class="primary">Save &amp; next ⏎</button>
+            <button type="button" class="sec" id="prev">◀ Prev</button>
+            <button type="button" class="sec" id="next">Next ▶</button>
+            <span id="saved">${lab.labeled_at ? "saved " + esc(lab.labeled_at) : ""}</span>
+          </div>
+          <div class="keys"><kbd>J</kbd>/<kbd>K</kbd> or <kbd>←</kbd>/<kbd>→</kbd> prev/next (auto-saves) · <kbd>Space</kbd> play/pause audio · <kbd>V</kbd> play/pause video · <kbd>Shift</kbd>+<kbd>G</kbd>/<kbd>B</kbd>/<kbd>X</kbd>/<kbd>E</kbd>/<kbd>M</kbd>/<kbd>N</kbd> start / stop a timeline segment · <kbd>[</kbd>/<kbd>]</kbd> set selected start / end · <kbd>Del</kbd> remove selected · <kbd>⏎</kbd> save &amp; next</div>
+        </form>
+        <div class="card" style="margin-top:14px"><h3>What the system decided</h3>
+          ${kv([
+            ["success / clog", `${e.success ? "OK" : "FAIL"} / ${e.clog_detected ? "CLOG" : "no"}`],
+            ["audio_state", e.audio_state],
+            ["motor detected / duration", `${a.motor_detected ?? !!e.motor_detected} / ${num(a.motor_duration_sec ?? e.motor_duration_sec)} s`],
+            ["motor window (s)", JSON.stringify(d.motor_window_sec ?? null)],
+            ["tings / rate", `${a.ting_count ?? "—"} / ${num(a.ting_rate_per_sec)} per s`],
+            ["loud spikes / rate", `${a.kibble_impact_peaks ?? e.kibble_peaks} / ${num(a.kibble_rate_per_sec ?? e.kibble_rate)} per s`],
+            ["motor dB / impact dB", `${num(a.motor_energy_db ?? e.motor_db)} / ${num(a.impact_energy_db ?? e.impact_db)}`],
+            ["IR / dog / food increased", `${!!e.infrared_mode} / ${!!e.dog_in_bowl} / ${!!e.food_increased}`],
+            ["fill before → after (diff)", `${num(e.before_fill_pct)}% → ${num(e.after_fill_pct)}% (${num((v.frame_diff_ratio ?? 0) * 100)}%)`],
+            ["weight (DP202) pre → post", `${d.pre_food_weight_g ?? "—"} → ${d.post_food_weight_g ?? e.food_weight_g ?? "—"}`],
+            ["abnormal (DP255)", e.feed_abnormal],
+            ["warnings", fmtWarnings(d.warnings)],
+            ["recording extended", `${num(d.recording_extended_sec)} s`],
+          ])}
+          <div class="diag">${esc((e.diagnosis || "").replaceAll(" | ", "\n"))}</div>
+        </div>
+      </div>
+    </div>`;
+  renderList();
+  wireEvent(e);
+  if (m.audio_clip) drawSpectrogram(m.audio_clip, d.motor_window_sec);
+}
+
+function updateMismatchHints() {
+  const e = EVENTS[cur], f = $("#labelForm");
+  Q.forEach((q) => {
+    const sel = f.elements[q.id].value, s = q.sys(e), el = f.querySelector(`[data-sys="${q.id}"]`);
+    el.classList.toggle("mismatch", !!(sel && s != null && !q.match(sel, s)));
+  });
+}
+
+// ---- timeline segments: what happens WHEN (drag body to move, drag edges to resize)
+const SEG_TYPES = [
+  { id: "dog_in_view", name: "Dog in view", key: "G", color: "#e0a526", radio: { puppy: "in_view" } },
+  { id: "dog_at_bowl", name: "Dog at bowl", key: "B", color: "#ff7a45", radio: { puppy: "at_bowl" } },
+  { id: "jam", name: "Clog / jam", key: "X", color: "#ff4d6d", radio: { problem: "jam" } },
+  { id: "empty_hopper", name: "Empty hopper", key: "E", color: "#c86bff", radio: { problem: "empty_hopper" } },
+  { id: "motor", name: "Motor running", key: "M", color: "#4f8cff" },
+  { id: "kibble", name: "Kibble falling", key: "N", color: "#3ecf8e" },
+];
+const TIMELINE_HTML = `<div class="tlbar" role="toolbar" aria-label="Add timeline segment at the playhead">
+    ${SEG_TYPES.map((t) => `<button type="button" class="tladd" data-add="${t.id}" style="--c:${t.color}">+ ${t.name} <kbd>⇧${t.key}</kbd></button>`).join("")}
+    <button type="button" class="tladd" id="autoBtn" style="--c:#9aa4b2" title="Replace the motor + kibble segments with a fresh automatic detection">✨ Re-detect motor &amp; kibble</button>
+  </div>
+  <div class="track" id="track" style="--lanes:${SEG_TYPES.length}">
+    ${SEG_TYPES.map((t, i) => `<div class="lane" style="--i:${i}"><span>${t.name}</span></div>`).join("")}
+    <div id="tlplayhead"></div>
+  </div>
+  <div class="segedit" id="segedit" hidden>
+    <span>Selected: <b id="seName"></b></span>
+    <label>start <input type="number" id="seStart" min="0" step="0.1" inputmode="decimal"> s</label>
+    <label>end <input type="number" id="seEnd" min="0" step="0.1" inputmode="decimal"> s</label>
+    <button type="button" class="sec small" id="seSetStart">Start = playhead <kbd>[</kbd></button>
+    <button type="button" class="sec small" id="seSetEnd">End = playhead <kbd>]</kbd></button>
+    <button type="button" class="sec small" id="seJump">Jump to start</button>
+    <button type="button" class="sec small" id="seDel">Delete</button>
+  </div>
+  <div class="sys"><b>Easiest:</b> play the clip, press a segment key (e.g. <kbd>⇧M</kbd>) when it starts. The segment grows with the playhead;
+    press the same key again when it stops. You can also drag a segment to move it, drag its <b>edge grips</b> to change its length,
+    or select it and type exact times / use <kbd>[</kbd> <kbd>]</kbd> to set start / end at the playhead. <kbd>Del</kbd> or × removes it.</div>`;
+let SEGS = [], selSeg = -1, dirty = false, dragging = false;
+const segType = (id) => SEG_TYPES.find((t) => t.id === id);
+const fmtT = (t) => `${t.toFixed(1)}s`;
+
+function mediaDuration() {
+  const aud = $("#aud"), vid = $("video");
+  return (aud && isFinite(aud.duration) && aud.duration) || (vid && isFinite(vid.duration) && vid.duration) || 0;
+}
+function playerTime() {
+  const p = lastPlayer && document.contains(lastPlayer) ? lastPlayer : $("#aud") || $("video");
+  return p ? p.currentTime : 0;
+}
+function seekAll(t) {
+  [$("#aud"), $("video")].forEach((p) => { if (p) p.currentTime = Math.min(t, (isFinite(p.duration) && p.duration) || t); });
+}
+
+function renderSegs() {
+  const track = $("#track"); if (!track) return;
+  track.querySelectorAll(".segi").forEach((n) => n.remove());
+  const D = mediaDuration();
+  if (D) SEGS.forEach((s, i) => {
+    const t = segType(s.type); if (!t) return;
+    const el = document.createElement("div");
+    el.className = "segi" + (i === selSeg ? " sel" : "") + (s.open ? " open" : "") + (s.auto ? " auto" : "");
+    el.dataset.i = i;
+    el.style.cssText = `--c:${t.color};--i:${SEG_TYPES.indexOf(t)};left:${(s.start / D) * 100}%;width:${Math.max(0.4, ((s.end - s.start) / D) * 100)}%`;
+    el.title = `${t.name}: ${fmtT(s.start)} – ${fmtT(s.end)}${s.open ? " (recording: press the key again to stop)" : ""}`;
+    el.innerHTML = `<span class="hl" data-edge="start" title="Drag to change start"></span><span class="txt">${fmtT(s.start)}–${fmtT(s.end)}</span><button type="button" class="x" aria-label="Remove ${t.name} segment">×</button><span class="hr" data-edge="end" title="Drag to change end"></span>`;
+    track.appendChild(el);
+  });
+  renderSegEditor();
+}
+
+function renderSegEditor() {
+  const box = $("#segedit"); if (!box) return;
+  const s = SEGS[selSeg];
+  box.hidden = !s;
+  if (!s) return;
+  const t = segType(s.type);
+  box.style.setProperty("--c", t.color);
+  $("#seName").textContent = t.name + (s.open ? " (recording…)" : "");
+  if (document.activeElement !== $("#seStart")) $("#seStart").value = s.start.toFixed(1);
+  if (document.activeElement !== $("#seEnd")) $("#seEnd").value = s.end.toFixed(1);
+}
+
+function setSegTimes(i, start, end) {
+  const s = SEGS[i], D = mediaDuration(); if (!s || !D) return;
+  if (start != null && isFinite(start)) s.start = +Math.min(Math.max(0, start), D - 0.2).toFixed(2);
+  if (end != null && isFinite(end)) s.end = +Math.min(Math.max(0, end), D).toFixed(2);
+  if (s.end < s.start + 0.2) { if (end != null) s.start = Math.max(0, s.end - 0.2); else s.end = Math.min(D, s.start + 0.2); }
+  delete s.open; delete s.auto;
+  dirty = true; renderSegs();
+}
+
+function isPlaying() { return [$("#aud"), $("video")].some((p) => p && !p.paused && !p.ended); }
+
+// Press a segment key once to start it at the playhead; while the clip plays the segment grows with
+// the playhead; press the same key again to end it there. When paused, a 3 s segment is dropped instead.
+function addSeg(type) {
+  const D = mediaDuration(); if (!D) return;
+  const t = +playerTime().toFixed(2);
+  const openIdx = SEGS.findIndex((s) => s.type === type && s.open);
+  if (openIdx >= 0) { selSeg = openIdx; setSegTimes(openIdx, null, Math.max(t, SEGS[openIdx].start + 0.2)); return; }
+  const t0 = Math.min(t, Math.max(0, D - 0.5));
+  const playing = isPlaying();
+  SEGS.push({ type, start: t0, end: +Math.min(D, t0 + (playing ? 0.3 : 3)).toFixed(2), ...(playing ? { open: true } : {}) });
+  selSeg = SEGS.length - 1; dirty = true;
+  const f = $("#labelForm"), r = segType(type).radio || {};
+  Object.entries(r).forEach(([name, val]) => {
+    if (name === "puppy" && val === "in_view" && f.elements.puppy.value === "at_bowl") return; // never downgrade "at bowl"
+    const el = f.querySelector(`input[name="${name}"][value="${val}"]`); if (el) el.checked = true;
+  });
+  updateMismatchHints(); renderSegs();
+}
+function growOpenSegs(t) {
+  let changed = false;
+  SEGS.forEach((s) => { if (s.open && t > s.start + 0.2 && Math.abs(s.end - t) > 0.05) { s.end = +t.toFixed(2); changed = true; } });
+  if (changed && !dragging) renderSegs();
+}
+function closeOpenSegs() { SEGS.forEach((s) => delete s.open); }
+function removeSeg(i) { if (i >= 0 && i < SEGS.length) { SEGS.splice(i, 1); selSeg = -1; dirty = true; renderSegs(); } }
+
+function wireTimeline() {
+  const track = $("#track"); if (!track) return;
+  document.querySelectorAll("[data-add]").forEach((b) => b.addEventListener("click", () => { b.blur(); addSeg(b.dataset.add); }));
+  $("#autoBtn").addEventListener("click", (ev) => { ev.currentTarget.blur(); applyAuto(true); });
+  $("#seStart").addEventListener("change", (ev) => setSegTimes(selSeg, parseFloat(ev.target.value), null));
+  $("#seEnd").addEventListener("change", (ev) => setSegTimes(selSeg, null, parseFloat(ev.target.value)));
+  $("#seSetStart").addEventListener("click", () => setSegTimes(selSeg, playerTime(), null));
+  $("#seSetEnd").addEventListener("click", () => setSegTimes(selSeg, null, playerTime()));
+  $("#seJump").addEventListener("click", () => { const s = SEGS[selSeg]; if (s) seekAll(s.start); });
+  $("#seDel").addEventListener("click", () => removeSeg(selSeg));
+  let drag = null;
+  track.addEventListener("pointerdown", (ev) => {
+    const x = ev.target.closest(".x");
+    const item = ev.target.closest(".segi");
+    if (x && item) { removeSeg(+item.dataset.i); return; }
+    const D = mediaDuration(), r = track.getBoundingClientRect();
+    if (!item) { if (D) { seekAll(((ev.clientX - r.left) / r.width) * D); } selSeg = -1; renderSegs(); return; }
+    const i = +item.dataset.i, edge = ev.target.dataset.edge || "move";
+    selSeg = i; delete SEGS[i].open; delete SEGS[i].auto; // grabbing a segment = you've checked it
+    drag = { i, edge, x0: ev.clientX, s0: SEGS[i].start, e0: SEGS[i].end, D, w: r.width, el: item };
+    dragging = true;
+    try { item.setPointerCapture(ev.pointerId); } catch { /* synthetic events have no capturable pointer */ }
+    item.classList.add("sel"); item.classList.remove("open");
+    renderSegEditor();
+    ev.preventDefault();
+  });
+  track.addEventListener("pointermove", (ev) => {
+    if (!drag) return;
+    const s = SEGS[drag.i], dt = ((ev.clientX - drag.x0) / drag.w) * drag.D, len = drag.e0 - drag.s0;
+    if (drag.edge === "start") s.start = Math.min(Math.max(0, drag.s0 + dt), s.end - 0.2);
+    else if (drag.edge === "end") s.end = Math.max(Math.min(drag.D, drag.e0 + dt), s.start + 0.2);
+    else { s.start = Math.min(Math.max(0, drag.s0 + dt), drag.D - len); s.end = s.start + len; }
+    s.start = +s.start.toFixed(2); s.end = +s.end.toFixed(2);
+    drag.el.style.left = `${(s.start / drag.D) * 100}%`;
+    drag.el.style.width = `${Math.max(0.4, ((s.end - s.start) / drag.D) * 100)}%`;
+    drag.el.querySelector(".txt").textContent = `${fmtT(s.start)}–${fmtT(s.end)}`;
+    seekAll(drag.edge === "end" ? s.end : s.start); // scrub so you hear/see the exact boundary
+    renderSegEditor();
+    dirty = true;
+  });
+  const end = () => { if (drag) { drag = null; dragging = false; renderSegs(); } };
+  track.addEventListener("pointerup", end);
+  track.addEventListener("pointercancel", end);
+}
+
+function wireEvent(e) {
+  const f = $("#labelForm");
+  SEGS = (normalizeLabel(LABELS[keyOf(e)])?.segments || []).map((s) => ({ ...s }));
+  selSeg = -1; dirty = false; lastPlayer = null;
+  f.addEventListener("change", () => { dirty = true; updateMismatchHints(); });
+  f.addEventListener("input", () => { dirty = true; });
+  updateMismatchHints();
+  f.addEventListener("submit", async (ev) => { ev.preventDefault(); await save(true); go(1, false); });
+  $("#prev").onclick = () => go(-1);
+  $("#next").onclick = () => go(1);
+  wireTimeline();
+  const aud = $("#aud"), vid = $("video");
+  const tick = (p) => () => {
+    lastPlayer = p;
+    const D = mediaDuration(), t = p.currentTime;
+    const ph = $("#playhead"); if (ph && aud && aud.duration) ph.style.left = `${(t / aud.duration) * 100}%`;
+    const tp = $("#tlplayhead"); if (tp && D) tp.style.left = `${(t / D) * 100}%`;
+    if (!p.paused) growOpenSegs(t);
+  };
+  [aud, vid].forEach((p) => { if (!p) return; ["timeupdate", "seeked", "play"].forEach((evn) => p.addEventListener(evn, tick(p))); p.addEventListener("loadedmetadata", renderSegs); });
+  linkPlayers(aud, vid);
+  if (aud) {
+    $("#specwrap").addEventListener("click", (ev) => {
+      const r = ev.currentTarget.getBoundingClientRect();
+      if (aud.duration) { lastPlayer = aud; seekAll(((ev.clientX - r.left) / r.width) * aud.duration); aud.play(); }
+    });
+  }
+  renderSegs();
+}
+
+// Audio + video are one recording (same start): keep them locked together. The WAV is the sound
+// source (it's what the analysis uses), so the video is muted to avoid hearing it twice.
+function linkPlayers(aud, vid) {
+  if (!aud || !vid) return;
+  vid.muted = true;
+  const other = (p) => (p === aud ? vid : aud);
+  const clampTo = (p, t) => Math.max(0, Math.min(t, isFinite(p.duration) ? p.duration : t));
+  // Each handler is idempotent (no-op when the other player already matches), so they can't ping-pong.
+  [aud, vid].forEach((p) => {
+    p.addEventListener("play", () => {
+      const o = other(p);
+      if (Math.abs(o.currentTime - p.currentTime) > 0.15) o.currentTime = clampTo(o, p.currentTime);
+      if (o.paused) o.play().catch(() => {});
+    });
+    p.addEventListener("pause", () => { const o = other(p); if (!o.paused && !p.ended) o.pause(); });
+    p.addEventListener("seeking", () => {
+      const o = other(p);
+      if (Math.abs(o.currentTime - p.currentTime) > 0.05) o.currentTime = clampTo(o, p.currentTime);
+    });
+    p.addEventListener("ratechange", () => { const o = other(p); if (o.playbackRate !== p.playbackRate) o.playbackRate = p.playbackRate; });
+  });
+  // Drift correction while playing (audio is the master clock).
+  aud.addEventListener("timeupdate", () => {
+    if (!aud.paused && !vid.paused && Math.abs(vid.currentTime - aud.currentTime) > 0.25) vid.currentTime = clampTo(vid, aud.currentTime);
+  });
+}
+
+async function save(force = false) {
+  if (!force && !dirty) return;
+  const e = EVENTS[cur], f = $("#labelForm"), label = { event_id: e.id, event_type: e.event_type, portions: e.portions,
+    system: Object.fromEntries(Q.map((q) => [q.id, q.sys(e)])) };
+  Q.forEach((q) => { label[q.id] = f.elements[q.id].value || null; });
+  label.notes = f.elements.notes.value.trim();
+  label.segments = SEGS.map(({ type, start, end, auto }) => ({ type, start, end, ...(auto ? { auto: true } : {}) })).sort((a, b) => a.start - b.start);
+  const probs = label.segments.filter((s) => s.type === "jam" || s.type === "empty_hopper");
+  label.problem_start_sec = probs.length ? Math.min(...probs.map((s) => s.start)) : null;
+  label.media_duration_sec = +mediaDuration().toFixed(2) || null;
+  if (!Q.some((q) => label[q.id]) && !label.notes && !label.segments.length) return;
+  const res = await fetch("/api/label", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: keyOf(e), label }) });
+  if (!res.ok) { alert("Save failed: " + (await res.text())); throw new Error("save failed"); }
+  LABELS[keyOf(e)] = (await res.json()).label;
+  dirty = false;
+  renderList();
+}
+
+async function go(delta, autosave = true) {
+  if (autosave) await save();
+  const n = Math.min(EVENTS.length - 1, Math.max(0, cur + delta));
+  if (n !== cur) { cur = n; renderEvent(); history.replaceState(null, "", `#${EVENTS[cur].id}`); }
+}
+
+// ---- spectrogram (client-side STFT, decoded at the WAV's native sample rate)
+function fft(re, im) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = (-2 * Math.PI) / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const a = i + k, b = a + len / 2, tr = re[b] * cr - im[b] * ci, ti = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+        const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
+      }
+    }
+  }
+}
+function heat(t) { // dark → purple → orange → yellow
+  const s = [[0, 0, 4], [80, 18, 123], [183, 55, 121], [252, 137, 97], [252, 253, 191]];
+  const x = Math.max(0, Math.min(1, t)) * (s.length - 1), i = Math.min(s.length - 2, Math.floor(x)), f = x - i;
+  return s[i].map((c, k) => c + (s[i + 1][k] - c) * f);
+}
+async function specFromUrl(url) {
+  const buf = await (await fetch(url)).arrayBuffer();
+  const sr = new DataView(buf).getUint32(24, true) || 8000;
+  const audio = await new OfflineAudioContext(1, 1, Math.min(Math.max(sr, 3000), 96000)).decodeAudioData(buf.slice(0));
+  const x = audio.getChannelData(0), N = 256, hop = 64, cols = Math.max(1, Math.floor((x.length - N) / hop));
+  const bins = N / 2, win = Float32Array.from({ length: N }, (_, i) => 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (N - 1)));
+  const mags = new Float32Array(cols * bins), re = new Float32Array(N), im = new Float32Array(N);
+  for (let c = 0; c < cols; c++) {
+    for (let i = 0; i < N; i++) { re[i] = x[c * hop + i] * win[i]; im[i] = 0; }
+    fft(re, im);
+    for (let b = 0; b < bins; b++) mags[c * bins + b] = 10 * Math.log10(re[b] * re[b] + im[b] * im[b] + 1e-12);
+  }
+  return { mags, cols, bins, hop, sr: audio.sampleRate, duration: audio.duration };
+}
+
+// ---- auto-detect motor + kibble segments from the spectrogram (owner's observation: the motor is a
+// sustained broadband jump; each kibble hit is a thin vertical line = a sharp broadband click; gaps
+// without vertical lines = no kibble falling). Suggestions only: the owner corrects them.
+const AUTO = { motorMinSec: 1.0, motorMergeSec: 1.0, gapSmoothSec: 0.5, gapDb: 8, gapMinSec: 0.8, kibbleLeadSec: 0.3, kibbleMinSec: 0.4 };
+function runs(mask, dt, mergeSec, minSec) {
+  const out = []; let s = -1;
+  for (let i = 0; i <= mask.length; i++) {
+    if (i < mask.length && mask[i]) { if (s < 0) s = i; } else if (s >= 0) { out.push([s, i - 1]); s = -1; }
+  }
+  const merged = [];
+  for (const r of out) { const last = merged[merged.length - 1]; if (last && (r[0] - last[1]) * dt <= mergeSec) last[1] = r[1]; else merged.push([...r]); }
+  return merged.filter((r) => (r[1] - r[0] + 1) * dt >= minSec).map((r) => [r[0] * dt, (r[1] + 1) * dt]);
+}
+function pct(arr, p) { const s = Float32Array.from(arr).sort(); return s[Math.min(s.length - 1, Math.floor(s.length * p))]; }
+function detectAuto(spec) {
+  const { mags, cols, bins, hop, sr } = spec, dt = hop / sr, nyq = sr / 2;
+  const bin = (hz) => Math.max(0, Math.min(bins - 1, Math.round((hz / nyq) * bins)));
+  // Motor: mean level 100–2000 Hz, smoothed ~0.3 s, above the midpoint between quiet floor and loud level
+  const b0 = bin(100), b1 = bin(2000), lvl = new Float32Array(cols);
+  for (let c = 0; c < cols; c++) { let s = 0; for (let b = b0; b <= b1; b++) s += mags[c * bins + b]; lvl[c] = s / (b1 - b0 + 1); }
+  const w = Math.max(1, Math.round(0.3 / dt)), sm = new Float32Array(cols);
+  let acc = 0; for (let c = 0; c < cols; c++) { acc += lvl[c]; if (c >= w) acc -= lvl[c - w]; sm[c] = acc / Math.min(c + 1, w); }
+  const floor = pct(sm, 0.1), loud = pct(sm, 0.95);
+  const segs = [];
+  let motor = [];
+  if (loud - floor > 6) {
+    const thr = floor + 0.5 * (loud - floor);
+    motor = runs(Array.from(sm, (v) => v > thr), dt, AUTO.motorMergeSec, AUTO.motorMinSec)
+      .map(([s, e]) => [Math.max(0, s - 0.15), e - 0.15]); // undo the smoothing lag
+    motor.forEach(([s, e]) => segs.push({ type: "motor", start: s, end: e }));
+  }
+  // Kibble: falling pellets add broadband energy on top of the motor hum, so inside a gap the WHOLE
+  // spectrum goes darker (owner's observation, confirmed on #4/#5). Gap = smoothed 600–3900 Hz level
+  // more than gapDb below the motor's typical level for >= gapMinSec. Kibble = motor time minus gaps.
+  const g0 = bin(600), g1 = bin(3900), bb = new Float32Array(cols);
+  for (let c = 0; c < cols; c++) { let s = 0; for (let b = g0; b <= g1; b++) s += mags[c * bins + b]; bb[c] = s / (g1 - g0 + 1); }
+  const gw = Math.max(1, Math.round(AUTO.gapSmoothSec / dt)), bbs = new Float32Array(cols);
+  acc = 0; for (let c = 0; c < cols; c++) { acc += bb[c]; if (c >= gw) acc -= bb[c - gw]; bbs[c] = acc / Math.min(c + 1, gw); }
+  const lag = AUTO.gapSmoothSec / 2;
+  motor.forEach(([ms, me]) => {
+    const c0 = Math.ceil(ms / dt), c1 = Math.min(cols - 1, Math.floor(me / dt));
+    if (c1 - c0 < 10) return;
+    const typical = pct(bbs.slice(c0, c1 + 1), 0.6);
+    const quiet = Array.from(bbs.slice(c0, c1 + 1), (v) => v < typical - AUTO.gapDb);
+    const gaps = runs(quiet, dt, 0.2, AUTO.gapMinSec).map(([s, e]) => [ms + s - lag, ms + e - lag]);
+    let t = ms + AUTO.kibbleLeadSec;
+    gaps.forEach(([gs, ge]) => { if (gs - t >= AUTO.kibbleMinSec) segs.push({ type: "kibble", start: t, end: gs }); t = Math.max(t, ge); });
+    if (me - t >= AUTO.kibbleMinSec) segs.push({ type: "kibble", start: t, end: me });
+  });
+  return segs.map((s) => ({ ...s, start: +s.start.toFixed(2), end: +s.end.toFixed(2), auto: true }));
+}
+let SPEC = null;
+function applyAuto(replace = false) {
+  if (!SPEC) return 0;
+  if (replace) SEGS = SEGS.filter((s) => !(s.type === "motor" || s.type === "kibble"));
+  else if (SEGS.some((s) => s.type === "motor" || s.type === "kibble")) return 0; // never overwrite your own marks
+  const found = detectAuto(SPEC);
+  SEGS.push(...found); selSeg = -1; dirty = true; renderSegs();
+  return found.length;
+}
+
+async function drawSpectrogram(url, motorWin) {
+  const token = ++specToken;
+  SPEC = null;
+  try {
+    const spec = await specFromUrl(url);
+    if (token !== specToken) return;
+    SPEC = spec;
+    const { mags, cols, bins, hop } = spec, audio = { sampleRate: spec.sr, duration: spec.duration };
+    applyAuto(false); // pre-fill motor + kibble suggestions on clips you haven't marked yet
+    const sorted = Float32Array.from(mags).sort(), lo = sorted[Math.floor(sorted.length * 0.05)], hi = sorted[Math.floor(sorted.length * 0.995)];
+    const cv = $("#spec"); if (!cv) return;
+    cv.width = cols; cv.height = bins;
+    const ctx = cv.getContext("2d"), img = ctx.createImageData(cols, bins);
+    for (let c = 0; c < cols; c++) for (let b = 0; b < bins; b++) {
+      const [r, g, bl] = heat((mags[c * bins + b] - lo) / (hi - lo)), p = ((bins - 1 - b) * cols + c) * 4;
+      img.data[p] = r; img.data[p + 1] = g; img.data[p + 2] = bl; img.data[p + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    const nyq = audio.sampleRate / 2;
+    ctx.fillStyle = "rgba(255,255,255,.55)";
+    [600, 1500, 2500].forEach((hz) => { if (hz < nyq) ctx.fillRect(0, Math.round(bins - 1 - (hz / nyq) * bins), cols, 1); });
+    if (Array.isArray(motorWin) && motorWin.length === 2) { // watchdog's detected motor window
+      ctx.fillStyle = "rgba(106,168,255,.9)";
+      motorWin.forEach((t) => ctx.fillRect(Math.round((t * audio.sampleRate) / hop), 0, 1, bins));
+    }
+    $("#specinfo").textContent = `${audio.sampleRate} Hz · Nyquist ${nyq} Hz · blue = system's motor window`;
+    $("#specdur").textContent = `${audio.duration.toFixed(1)} s`;
+  } catch (err) {
+    if (token === specToken && $("#specinfo")) $("#specinfo").textContent = "could not decode audio: " + err.message;
+  }
+}
+
+// ---- global UI wiring
+$("#list").addEventListener("click", async (ev) => { const b = ev.target.closest("button[data-i]"); if (b) { await go(+b.dataset.i - cur); } });
+$("#main").addEventListener("click", (ev) => {
+  const img = ev.target.closest("img[data-zoom]"); if (!img) return;
+  const dlg = $("#zoom"); dlg.querySelector("img").src = img.src; dlg.querySelector("img").alt = img.alt; dlg.showModal();
+});
+$("#zoom").addEventListener("click", () => $("#zoom").close()); // fallback for browsers without closedby
+window.addEventListener("beforeunload", (ev) => { if (dirty) ev.preventDefault(); });
+document.addEventListener("keydown", (ev) => {
+  const tgt = ev.target instanceof Element ? ev.target : document.body;
+  if (tgt.closest("textarea, input[type=text], input[type=number]") || ev.metaKey || ev.ctrlKey || ev.altKey || $("#zoom").open) return;
+  const f = $("#labelForm"); if (!f) return;
+  const set = (name, val) => { const r = f.querySelector(`input[name="${name}"][value="${val}"]`); if (r) { r.checked = true; dirty = true; updateMismatchHints(); } };
+  const toggle = (name) => set(name, f.elements[name].value === "yes" ? "no" : "yes");
+  const cycle = (name, opts) => set(name, opts[(opts.indexOf(f.elements[name].value) + 1) % opts.length]);
+  const k = ev.key.toLowerCase();
+  if (ev.shiftKey) { // Shift+letter adds a timeline segment at the playhead
+    const t = SEG_TYPES.find((s) => s.key.toLowerCase() === k);
+    if (t) { ev.preventDefault(); addSeg(t.id); }
+    return;
+  }
+  const map = { "1": () => set("food_dispensed", "yes"), "2": () => set("food_dispensed", "partial"), "3": () => set("food_dispensed", "no"),
+    c: () => cycle("problem", ["none", "jam", "empty_hopper", "cant_tell"]),
+    l: () => cycle("lighting", ["daylight", "lights", "dim", "ir", "glare"]),
+    d: () => cycle("puppy", ["not_visible", "in_view", "at_bowl"]),
+    f: () => cycle("food_visible_after", ["yes", "no", "cant_tell"]),
+    delete: () => removeSeg(selSeg), backspace: () => removeSeg(selSeg),
+    "[": () => setSegTimes(selSeg, playerTime(), null), "]": () => setSegTimes(selSeg, null, playerTime()),
+    j: () => go(-1), arrowleft: () => go(-1), k: () => go(1), arrowright: () => go(1),
+    " ": () => { const a = $("#aud"); if (a) { lastPlayer = a; a.paused ? a.play() : a.pause(); } },
+    v: () => { const v = $("video"); if (v) { lastPlayer = v; v.paused ? v.play() : v.pause(); } },
+    enter: () => f.requestSubmit() };
+  // Space always plays/pauses (even if a button or the player has focus — otherwise Space re-clicks
+  // the last-pressed "+ segment" button). Only real text fields keep their own keys.
+  if (k === " " && !tgt.closest("textarea, input[type=text], input[type=number]")) { ev.preventDefault(); map[" "](); return; }
+  if (tgt.closest("button, a") && k === "enter") return;
+  if (map[k]) { ev.preventDefault(); map[k](); }
+});
+
+(async () => {
+  const data = await (await fetch("/api/events")).json();
+  EVENTS = data.events; LABELS = data.labels || {};
+  $("#bundleName").textContent = `${data.bundle} · ${data.db} · ${EVENTS.length} events`;
+  if (data.bundle === "live server" && !document.querySelector(".pp-nav")) {  // on the VPS: shared top nav
+    const s = document.createElement("script"); s.src = "/nav.js"; document.body.append(s);
+  }
+  const fromHash = EVENTS.findIndex((e) => `#${e.id}` === location.hash);
+  cur = fromHash >= 0 ? fromHash : Math.max(0, EVENTS.findIndex((e) => !LABELS[keyOf(e)]));
+  if (!EVENTS.length) { $("#main").innerHTML = `<p class="muted">No feed_events in this bundle.</p>`; return; }
+  renderEvent();
+})();
+</script>
+</body>
+</html>
