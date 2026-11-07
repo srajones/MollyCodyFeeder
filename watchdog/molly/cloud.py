@@ -9,14 +9,50 @@ import random
 import ssl
 import string
 import time
+import types
 import uuid
 from typing import Any, Dict, Optional, Tuple
 
-import paho.mqtt.client as mqtt
 import requests
 
 from watchdog.molly.constants import API_URL, APP_ID, HMAC_KEY, PKG_NAME
 from watchdog.molly.crypto import _build_sign_input, _get_ch_key, _md5_hex, _rsa_encrypt_password
+
+try:
+    import paho.mqtt.client as mqtt  # type: ignore[import-not-found]
+except ImportError:
+    mqtt = types.ModuleType("paho.mqtt.client")
+
+    class _MqttClientShim:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            self.on_connect = None
+            self.on_message = None
+
+        def username_pw_set(self, username: str, password: Optional[str] = None) -> None:
+            pass
+
+        def tls_set_context(self, context: Any = None) -> None:
+            pass
+
+        def connect(self, host: str, port: int = 8883, keepalive: int = 60) -> int:
+            raise RuntimeError("paho-mqtt is required for live MQTT connections")
+
+        def loop_start(self) -> None:
+            pass
+
+        def loop_stop(self) -> None:
+            pass
+
+        def disconnect(self) -> None:
+            pass
+
+        def subscribe(self, topic: str, qos: int = 0) -> Tuple[int, int]:
+            return (0, 1)
+
+        def publish(self, topic: str, payload: Any = None, qos: int = 0) -> Any:
+            return None
+
+    mqtt.Client = _MqttClientShim  # type: ignore[attr-defined]
 
 logger = logging.getLogger("poor_puppy.molly.cloud")
 
@@ -308,9 +344,12 @@ class CloudSessionMixin:
         client_id = f"{PKG_NAME}_mb_{rand_suffix}_{dev_hash}_DEFAULT"
         return client_id, username, password
 
-    def _create_mqtt_client(self) -> mqtt.Client:
+    def _create_mqtt_client(self) -> Any:
         client_id, username, password = self._get_mqtt_credentials()
-        mclient = mqtt.Client(client_id=client_id)
+        if hasattr(mqtt, "CallbackAPIVersion"):
+            mclient = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id=client_id)
+        else:
+            mclient = mqtt.Client(client_id=client_id)
         mclient.username_pw_set(username, password)
         ctx = ssl.create_default_context()
         ctx.check_hostname = False

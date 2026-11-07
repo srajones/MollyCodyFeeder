@@ -3,14 +3,37 @@
 import json
 import logging
 import time
+import types
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
-import tinytuya
 
 from watchdog.schedule_decoder import MealEntry, decode_molly_schedule, update_molly_schedule_slot
 from watchdog.molly.constants import DP_NAMES, MQTT_HOST
 from watchdog.molly.net import _never_sent
+
+try:
+    import tinytuya  # type: ignore[import-not-found]
+except ImportError:
+    tinytuya = types.ModuleType("tinytuya")
+
+    class _TinyTuyaDeviceShim:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+        def set_socketTimeout(self, timeout: float) -> None:
+            pass
+
+        def set_socketRetryLimit(self, limit: int) -> None:
+            pass
+
+        def status(self) -> Dict[str, Any]:
+            raise RuntimeError("tinytuya is not installed")
+
+        def set_multiple_values(self, dps: Dict[str, Any]) -> Dict[str, Any]:
+            raise RuntimeError("tinytuya is not installed")
+
+    tinytuya.Device = _TinyTuyaDeviceShim  # type: ignore[attr-defined]
 
 logger = logging.getLogger("poor_puppy.molly.device")
 

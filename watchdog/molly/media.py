@@ -8,10 +8,15 @@ import wave
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-import av
-import cv2
 import numpy as np
 from PIL import Image
+
+from watchdog.analysis.vision import cv2
+
+try:
+    import av  # type: ignore[import-not-found]
+except ImportError:
+    av = None  # type: ignore[assignment]
 
 logger = logging.getLogger("poor_puppy.molly.media")
 
@@ -88,7 +93,7 @@ class MediaEncodingMixin:
         output_mp4: str,
         audio_wav: Optional[str] = None,
     ) -> bool:
-        if not frames:
+        if not frames or av is None:
             return False
         try:
             def _rgb(payload):

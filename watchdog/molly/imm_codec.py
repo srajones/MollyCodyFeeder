@@ -1,4 +1,4 @@
-"""Pure helpers for the camera `imm` (AES/KCP 330) protocol: message framing, crypto, G.711 decoding."""
+"""Pure helpers for the camera `imm` (AES/KCP 330) protocol: message framing, crypto, G.711 codec."""
 
 import hashlib
 import hmac
@@ -9,7 +9,8 @@ import struct
 from typing import Optional, Tuple
 
 import numpy as np
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+from watchdog.molly.crypto import _aes128_cbc_decrypt, _aes128_cbc_encrypt
 
 
 # -----------------------------------------------------------------------------
@@ -39,7 +40,7 @@ _IMM_STARTUP_MESSAGES = [
 
 # -----------------------------------------------------------------------------
 # Two-way talk (speaker TX) framing — verified on-device via mic loopback (v0.1):
-#   32-byte header + G.711 A-law payload, sent on KCP conv=2:
+#   32-byte header + G.711 payload, sent on KCP conv=2:
 #   [0:4]   u32 0x12345678  magic
 #   [4:8]   u32 talk reqId  MUST equal the reqId used in the talk-open (cmd=8) request,
 #                           otherwise the camera ACKs the KCP segment but silently drops it
@@ -101,6 +102,44 @@ def _alaw_to_pcm16(alaw_bytes: bytes) -> np.ndarray:
     return _ALAW_TO_PCM16_TABLE[idx]
 
 
+def _build_ulaw_table() -> np.ndarray:
+    tbl = np.zeros(256, dtype=np.int16)
+    for b in range(256):
+        u = ~b & 0xFF
+        sign = u & 0x80
+        exp = (u >> 4) & 0x07
+        mant = u & 0x0F
+        sample = ((mant << 3) + 0x84) << exp
+        sample -= 0x84
+        tbl[b] = -sample if sign else sample
+    return tbl
+
+
+_ULAW_TO_PCM16_TABLE = _build_ulaw_table()
+
+
+def _ulaw_to_pcm16(ulaw_bytes: bytes) -> np.ndarray:
+    if not ulaw_bytes:
+        return np.zeros(0, dtype=np.int16)
+    idx = np.frombuffer(ulaw_bytes, dtype=np.uint8)
+    return _ULAW_TO_PCM16_TABLE[idx]
+
+
+def _pcm16_to_ulaw(pcm16: np.ndarray) -> bytes:
+    """ITU-T G.711 mu-law encoder in pure vectorized NumPy (for speaker TX without ffmpeg)."""
+    if pcm16 is None or len(pcm16) == 0:
+        return b""
+    samples = np.asarray(pcm16, dtype=np.int32)
+    sign = np.where(samples < 0, 0x80, 0).astype(np.uint8)
+    mag = np.minimum(np.abs(samples), 32635) + 0x84
+    exp = np.zeros_like(mag, dtype=np.uint8)
+    for e in range(1, 8):
+        exp = np.where(mag >= (1 << (e + 7)), e, exp)
+    mant = ((mag >> (exp + 3)) & 0x0F).astype(np.uint8)
+    ulaw = (~(sign | (exp << 4) | mant)) & 0xFF
+    return ulaw.astype(np.uint8).tobytes()
+
+
 def _imm_rand_ascii(n: int) -> str:
     alphabet = string.ascii_letters + string.digits
     return "".join(random.choice(alphabet) for _ in range(n))
@@ -123,16 +162,14 @@ def _imm_seal_aes(key: bytes, plain: bytes) -> bytes:
     pad = 16 - (len(plain) % 16)
     padded = plain + bytes([pad] * pad)
     iv = os.urandom(16)
-    enc = Cipher(algorithms.AES(key), modes.CBC(iv)).encryptor()
-    return iv + enc.update(padded) + enc.finalize()
+    return iv + _aes128_cbc_encrypt(key, iv, padded)
 
 
 def _imm_open_aes(key: bytes, data: bytes) -> bytes:
     if len(data) < 32 or (len(data) % 16) != 0:
         raise ValueError(f"bad cipher len {len(data)}")
     iv = data[:16]
-    dec = Cipher(algorithms.AES(key), modes.CBC(iv)).decryptor()
-    out = dec.update(data[16:]) + dec.finalize()
+    out = _aes128_cbc_decrypt(key, iv, data[16:])
     pad = out[-1]
     if 1 <= pad <= 16 and pad <= len(out):
         out = out[:-pad]

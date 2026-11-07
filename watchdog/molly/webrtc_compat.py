@@ -2,8 +2,19 @@
 
 import asyncio
 
-from aiortc import MediaStreamTrack
-from aiortc.rtcdtlstransport import RTCDtlsTransport, State
+try:
+    from aiortc import MediaStreamTrack  # type: ignore[import-not-found]
+    from aiortc.rtcdtlstransport import RTCDtlsTransport, State  # type: ignore[import-not-found]
+
+    _HAS_AIORTC = True
+except ImportError:
+    _HAS_AIORTC = False
+
+    class MediaStreamTrack:  # type: ignore[no-redef]
+        kind = "audio"
+
+        def __init__(self) -> None:
+            pass
 
 
 # -----------------------------------------------------------------------------
@@ -44,5 +55,6 @@ class _PassiveAudioTrack(MediaStreamTrack):
         raise asyncio.CancelledError()
 
 
-# Patch aiortc DTLS fingerprint validation (cryptography>=42 rejects the camera certificate)
-RTCDtlsTransport._validate_peer_identity = _safe_validate_peer_identity
+if _HAS_AIORTC:
+    # Patch aiortc DTLS fingerprint validation (cryptography>=42 rejects the camera certificate)
+    RTCDtlsTransport._validate_peer_identity = _safe_validate_peer_identity

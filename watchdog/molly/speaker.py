@@ -22,6 +22,7 @@ from watchdog.molly.imm_codec import (
     _imm_build_ctrl,
     _imm_build_talk_frame,
     _imm_seal_aes,
+    _pcm16_to_ulaw,
 )
 from watchdog.molly.imm_transport import _ImmSessionProtocol
 
@@ -181,7 +182,7 @@ class SpeakerMixin:
 
     @staticmethod
     def _build_chime_alaw(sample_rate: int = 8000) -> bytes:
-        """Generates a crisp two-tone attention chime (880 Hz -> 1175 Hz + 0.2s pause) in G.711 A-law."""
+        """Generates a crisp two-tone attention chime (880 Hz -> 1175 Hz + 0.2s pause) in G.711 mu-law."""
         t1 = np.linspace(0, 0.18, int(sample_rate * 0.18), endpoint=False)
         t2 = np.linspace(0, 0.24, int(sample_rate * 0.24), endpoint=False)
         tone1 = 0.65 * np.sin(2 * np.pi * 880.0 * t1) * np.exp(-3.0 * t1)
@@ -190,23 +191,24 @@ class SpeakerMixin:
         pcm = np.concatenate([tone1, tone2, pause])
         pcm16 = np.clip(pcm * 32767.0, -32768, 32767).astype(np.int16)
 
-        with tempfile.TemporaryDirectory(prefix="kibble_chime_") as tmpdir:
-            wav_p = os.path.join(tmpdir, "chime.wav")
-            alaw_p = os.path.join(tmpdir, "chime.alaw")
-            with wave.open(wav_p, "wb") as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(2)
-                wf.setframerate(sample_rate)
-                wf.writeframes(pcm16.tobytes())
-            subprocess.run(
-                ["ffmpeg", "-y", "-i", wav_p, "-ar", "8000", "-ac", "1", "-f", SpeakerMixin.TALK_FFMPEG_FORMAT, alaw_p],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=False,
-            )
-            if Path(alaw_p).exists():
-                return Path(alaw_p).read_bytes()
-        return b""
+        if shutil.which("ffmpeg"):
+            with tempfile.TemporaryDirectory(prefix="kibble_chime_") as tmpdir:
+                wav_p = os.path.join(tmpdir, "chime.wav")
+                alaw_p = os.path.join(tmpdir, "chime.alaw")
+                with wave.open(wav_p, "wb") as wf:
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)
+                    wf.setframerate(sample_rate)
+                    wf.writeframes(pcm16.tobytes())
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", wav_p, "-ar", "8000", "-ac", "1", "-f", SpeakerMixin.TALK_FFMPEG_FORMAT, alaw_p],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=False,
+                )
+                if Path(alaw_p).exists():
+                    return Path(alaw_p).read_bytes()
+        return _pcm16_to_ulaw(pcm16)
 
     @staticmethod
     def _loudness_chain(volume: float) -> str:
@@ -228,31 +230,48 @@ class SpeakerMixin:
         volume: float = 2.5,
         prepend_chime: bool = False,
     ) -> bytes:
-        """Converts any audio file to 8000 Hz mono G.711 A-law (`PCMA`) bytes for `conv=2` speaker TX."""
-        with tempfile.TemporaryDirectory(prefix="kibble_alaw_") as tmpdir:
-            alaw_path = os.path.join(tmpdir, "out.alaw")
-            cmd = [
-                "ffmpeg",
-                "-y",
-                "-i",
-                audio_path,
-                "-af",
-                cls._loudness_chain(volume),
-                "-ar",
-                "8000",
-                "-ac",
-                "1",
-                "-f",
-                cls.TALK_FFMPEG_FORMAT,
-                alaw_path,
-            ]
-            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-            if not Path(alaw_path).exists():
+        """Converts any audio file to 8000 Hz mono G.711 mu-law bytes for `conv=2` speaker TX."""
+        voice_alaw = b""
+        if shutil.which("ffmpeg"):
+            with tempfile.TemporaryDirectory(prefix="kibble_alaw_") as tmpdir:
+                alaw_path = os.path.join(tmpdir, "out.alaw")
+                cmd = [
+                    "ffmpeg",
+                    "-y",
+                    "-i",
+                    audio_path,
+                    "-af",
+                    cls._loudness_chain(volume),
+                    "-ar",
+                    "8000",
+                    "-ac",
+                    "1",
+                    "-f",
+                    cls.TALK_FFMPEG_FORMAT,
+                    alaw_path,
+                ]
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                if Path(alaw_path).exists():
+                    voice_alaw = Path(alaw_path).read_bytes()
+        if not voice_alaw:
+            try:
+                with wave.open(audio_path, "rb") as wf:
+                    sr = wf.getframerate()
+                    nch = wf.getnchannels()
+                    raw = wf.readframes(wf.getnframes())
+                pcm = np.frombuffer(raw, dtype=np.int16).astype(np.float32)
+                if nch > 1:
+                    pcm = pcm.reshape(-1, nch).mean(axis=1)
+                if sr != 8000 and len(pcm) > 1:
+                    n_out = max(1, int(round(len(pcm) * 8000.0 / sr)))
+                    pcm = np.interp(np.linspace(0, len(pcm) - 1, n_out), np.arange(len(pcm)), pcm)
+                scaled = np.clip(pcm * max(0.1, float(volume)), -32635.0, 32635.0).astype(np.int16)
+                voice_alaw = _pcm16_to_ulaw(scaled)
+            except Exception:
                 return b""
-            voice_alaw = Path(alaw_path).read_bytes()
-            if prepend_chime:
-                return cls._build_chime_alaw(8000) + voice_alaw
-            return voice_alaw
+        if prepend_chime and voice_alaw:
+            return cls._build_chime_alaw(8000) + voice_alaw
+        return voice_alaw
 
     # Talk (speaker TX) tunables. Kept as class attributes so they can be tuned/tested
     # without editing the session code.
@@ -280,7 +299,7 @@ class SpeakerMixin:
         alaw: bytes,
         output_wav: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Opens the talk channel and streams G.711 A-law to the feeder speaker, real-time paced."""
+        """Opens the talk channel and streams G.711 to the feeder speaker, real-time paced."""
         key = udp_proto.aes_key
 
         def send_ctrl(raw: bytes) -> None:

@@ -1,0 +1,24 @@
+{
+  "domain": "molly_cody_feeder",
+  "name": "Molly & Cody Smart Pet Feeder",
+  "codeowners": ["@srajones"],
+  "config_flow": true,
+  "documentation": "https://github.com/srajones/MollyCodyFeeder",
+  "integration_type": "device",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/srajones/MollyCodyFeeder/issues",
+  "requirements": [
+    "requests>=2.31.0",
+    "paho-mqtt>=1.6.1",
+    "tinytuya>=1.13.0",
+    "cryptography>=41.0.0",
+    "numpy>=1.24.0",
+    "Pillow>=9.4.0",
+    "opencv-python-headless>=4.8.0",
+    "av>=11.0.0",
+    "aioice>=0.9.0",
+    "aiortc>=1.9.0",
+    "edge-tts>=6.1.9"
+  ],
+  "version": "0.7.0"
+}

@@ -1,6 +1,67 @@
-# 🐶 Poor Puppy (`kibble`) — Molly & Cody Smart Feeder Watchdog, Cloud IPC Client & Anti-Clog Classifier
+# 🐶 MollyCodyFeeder (`v0.7.0`) — Standalone Native Home Assistant HACS Integration & Anti-Clog Classifier
 
-**Poor Puppy** is a self-healing, 100% cloud-capable CLI, watchdog daemon, two-way camera/speaker client, and dual-modality (Audio + Computer Vision) anti-clog verification system for the **Molly & Cody Dual Bowl Smart Pet Feeder with Camera** (`and.mollycody.app01` / Tuya OEM `ty542388097131d9db`).
+**MollyCodyFeeder** (`custom_components/molly_cody_feeder/`, domain `molly_cody_feeder`) is a **100% standalone, native Home Assistant HACS custom integration** for the **Molly & Cody 6L Smart Pet Feeder with Camera** (`and.mollycody.app01` / Tuya OEM `yv8xga2javjxtqdc`).
+
+> **100% Standalone Native HACS Architecture (Zero External VPS Required):** The `v0.7.0` Home Assistant HACS integration runs completely inside Home Assistant (`custom_components/molly_cody_feeder/core/`) with **zero external VPS or external watchdog server dependency**. It features an **Ultra-Lightweight Audio-Only Anti-Clog Verification Mode** engineered specifically for small-compute HAOS boxes (Raspberry Pi, Home Assistant Green, Home Assistant Yellow), alongside individually toggleable Camera snapshots (`imm` `AES/KCP 330`), two-way speaker TTS (`G.711 mulaw`), and optional Visual Inner-Bowl Verification (`BowlAnalyzer`).
+
+---
+
+## 🏠 Home Assistant HACS Installation & Configuration (`v0.7.0`)
+
+### 1. Install via HACS
+1. In Home Assistant, navigate to **HACS → Integrations → ⋮ (top right menu) → Custom repositories**.
+2. Add this repository URL with category **Integration**, then click **Download** on **Molly & Cody Smart Feeder**.
+3. Restart Home Assistant.
+4. Go to **Settings → Devices & Services → Add Integration** and select **Molly & Cody Smart Feeder** (`molly_cody_feeder`).
+5. Configure your connection mode (`auto`, `cloud`, or `lan`), Molly & Cody Cloud credentials (and/or local LAN IP + 16-byte Local Key), and modular compute toggles.
+
+### 2. Ultra-Lightweight Audio-Only Anti-Clog Verification Mode for Small-Compute HAOS Boxes (Raspberry Pi / HA Green / Yellow)
+Confirming whether kibble actually hit the stainless-steel bowl does **not** require video decoding: the acoustic signature of the **auger motor spinning alone** (clogged chute or empty hopper) vs. **motor + hard kibble pellets striking the steel bowl** is unmistakable.
+
+- **Tiny Bandwidth (`~8 KB/s`)**: On the feeder's `imm` (`AES/KCP 330`) protocol, microphone audio (`conv=2`) is **8000 Hz mono G.711 A-law** (`~8 KB/s` — only `~100–240 KB` for an entire meal!).
+- **Zero-Video, Zero-FFmpeg Capture (`capture_audio_clip` / `audio_only=True`)**:
+  - In Audio-Only Verification mode (`enable_verification=True`, `enable_vision_verification=False`, `enable_camera=False`), the integration opens only `conv=0` (control) + `conv=2` (`cmd 0x00040006` start audio) and **completely skips starting the `conv=1` 1280×720 H.264 video stream (`cmd 6`)**.
+  - G.711 A-law packets are decoded directly in Python via a **256-entry lookup table** and written to `.wav` using Python's stdlib `wave` module — requiring **zero `ffmpeg` subprocesses, zero H.264 video decoding, and no `opencv` or `Pillow`**.
+- **Milliseconds of CPU & `< 2 MB` RAM (NumPy + Pure-Python Stdlib Fallback)**:
+  - `core/analysis/audio.py`, `core/analysis/ting.py`, and `core/analysis/flow.py` run allocation-frugal 1D signal processing (supporting both NumPy and a pure-Python stdlib `math`/`struct` fallback when NumPy is not loaded) to classify every feed in milliseconds:
+    - **Motor Only (`motor_no_kibble` / Clog or Empty Hopper)**: sustained `200–900 Hz` auger motor hum (`motor_detected=True`) with near-zero kibble impact spikes/tings (`kibble_dispensed_audio=False`).
+    - **Motor + Food Dispensed (`verified` / `dispensed` / Fed)**: sustained `200–900 Hz` motor hum + clear kibble impact clatter (`>= 15` spikes in `1500–3800 Hz`) and 256-pt STFT metallic bowl tings (`ting_rate_per_sec >= 4.6` normal, `< 4.6` `weak_flow`).
+    - **No Motor (`no_motor`)**: feeder never ran (`motor_detected=False`).
+- **Recommended Small-Compute HAOS Profile**:
+  - `enable_verification=True`, `enable_vision_verification=False`, `enable_camera=False` (lightweight default/recommended verification mode for HAOS boxes).
+
+### 3. Modular Compute Feature Toggles (Config Flow & Options Flow)
+Not every Home Assistant host has the same CPU budget. Every compute-intensive capability can be toggled at setup or anytime at runtime via **Configure (Options Flow)** or config switches:
+
+| Option Key | Lightweight HAOS Profile | Description |
+| :--- | :---: | :--- |
+| `enable_verification` | `true` | Enables ultra-lightweight Audio-Only anti-clog verification (`conv=2` 8 kHz mono G.711 A-law, 10ms RMS `200–900 Hz` motor window + `1500–3800 Hz` kibble clatter `>= 15` spikes + 256-pt STFT spectral-flux `ting` detector `ting_rate_per_sec >= 4.6` + learned per-feeder baselines in `< 2 MB` RAM). |
+| `enable_vision_verification` | `false` | Optional OpenCV/Pillow `BowlAnalyzer` inner-bowl fill analysis (`DAY_PIT` daylight & `IR_BAND` infrared night-vision modes, dog-at-bowl guard, and before/after/annotated `ImageEntity` updates). When `false`, `audio_only=True` / `decode_video=False` skips `cmd 6` H.264 video streaming and decoding. |
+| `enable_camera` | `false` | Optional live `720×1280` portrait camera snapshots via Cloud `imm` (`AES/KCP 330`). When `false`, the camera entity never initiates live KCP sessions and returns cached/None bytes with zero compute overhead. |
+| `enable_tts` | `true` | Enables two-way speaker talkback (`play_tts`, `play_audio`, `play_chime`) over KCP `conv=2` (`8000 Hz` mono G.711 μ-law, `codec=0x86`, `reqId=7`). |
+| `enable_mp4_recording` | `false` | Enables full-feed H.264 MP4 + AAC clip muxing and automated `RetentionManager` pruning. |
+| `enable_auto_retry` | `true` | Enables a 1-portion anti-jam auto-retry on `motor_no_kibble`/`no_motor`, bounded by `max_daily_retry_portions` and `hopper_empty_suspected` stop when two consecutive motor runs produce zero kibble. |
+
+### 4. Entity Platforms (9 Platforms, 77 Entities)
+- **`sensor` (22 entities)**: `status`, `active_transport`, `configured_mode`, `last_meal_time`, `last_meal_result`, `last_meal_portions`, `minutes_since_last_meal`, `next_meal_time`, `minutes_to_next_meal`, `today_meals`, `today_fed`, `today_problems`, `today_portions`, `week_confirmed_pct`, `kibble_flow`, `kibble_flow_7d_avg`, `last_motor_duration_sec`, `hopper_percent`, `hopper_portions_left`, `hopper_days_left`, `bowl_fill_pct`, `schedule`.
+- **`binary_sensor` (9 entities)**: `online`, `clog_detected`, `hardware_fault` (True only when `DP 255 > 1`; `== 1` is normal), `hopper_low`, `food_present`, `dog_at_bowl`, `is_infrared_mode`, `busy`, `weak_flow_warning`.
+- **`switch` (16 entities)**: Schedule Slot `1..8` enable switches (`slot_1_enabled`..`slot_8_enabled`), Hardware DP switches (`indicator_light` DP 101, `flip_screen` DP 103, `osd_watermark` DP 104, `motion_switch` DP 134), and runtime compute toggles (`enable_auto_retry`, `enable_tts`, `enable_verification`, `enable_vision_verification`).
+- **`button` (8 entities)**: `feed_1_portion`, `verify_feed`, `check_bowl`, `capture_snapshot`, `refill_hopper`, `play_chime`, `sync_schedules`, `clear_clog_alert`.
+- **`number` (12 entities)**: `feed_portions` (`1..20`), `hopper_capacity_portions` (`10..500`), `portion_weight_g` (`1..50`), `tts_volume` (`0.1..5.0`), and Schedule Slot `1..8` portion numbers (`slot_1_portions`..`slot_8_portions`, `1..20`).
+- **`select` (4 entities)**: `connection_mode` (`auto`, `cloud`, `lan`), `nightvision` (DP 108: `auto`, `off`, `on`), `motion_sensitivity` (DP 106: `low`, `medium`, `high`), `alert_mode` (`every_miss`, `no_food_hours`).
+- **`camera` (1 entity)**: `MollyCodyBowlCamera` (`bowl_camera`, upright `720×1280` JPEG snapshot, respects `enable_camera` and shared `imm` session lock).
+- **`image` (3 entities)**: `annotated_bowl`, `before_feed`, `after_feed`.
+- **`event` (2 entities)**: `feed_event` (`molly_cody_feeder_feed_event`) and `alert_event` (`molly_cody_feeder_alert_event`).
+
+### 5. Custom Home Assistant Services (14 Services)
+All services are registered under domain `molly_cody_feeder`:
+`feed`, `verify_feed`, `check_bowl`, `set_schedule_slot`, `set_schedule_raw`, `sync_schedules`, `refill_hopper`, `capture_snapshot`, `play_tts`, `play_audio`, `play_chime`, `set_dp`, `run_online_check`, `clear_clog_alert`.
+
+### 6. Lovelace Dashboard & Automation Blueprints
+- **Lovelace Dashboard**: Import [`lovelace/molly_cody_dashboard.yaml`](lovelace/molly_cody_dashboard.yaml) for a 2-tab dashboard covering live bowl camera & before/after/annotated verification images, anti-clog telemetry, hopper gauge, quick action buttons, DP 207 schedule slots 1–8, and hardware/compute switches.
+- **Automation Blueprints**:
+  - [`blueprints/automation/molly_cody_feeder/clog_alert_notification.yaml`](blueprints/automation/molly_cody_feeder/clog_alert_notification.yaml) — Clog, missed meal & hardware fault notification + optional feeder speaker TTS alert.
+  - [`blueprints/automation/molly_cody_feeder/hopper_low_reminder.yaml`](blueprints/automation/molly_cody_feeder/hopper_low_reminder.yaml) — Low-hopper refill reminder notification.
 
 ---
 

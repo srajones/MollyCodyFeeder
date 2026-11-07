@@ -1,0 +1,70 @@
+blueprint:
+  name: "Molly & Cody Smart Feeder — Hopper Low Refill Reminder"
+  description: >
+    Sends a reminder notification when the Molly & Cody Smart Feeder kibble hopper
+    drops at or below the configured low-hopper threshold or fires a hopper_low
+    event on the Home Assistant event bus.
+  domain: automation
+  input:
+    hopper_low_sensor:
+      name: Hopper Low Binary Sensor
+      description: The molly_cody_feeder hopper_low binary sensor entity.
+      default: binary_sensor.molly_cody_feeder_hopper_low
+      selector:
+        entity:
+          domain: binary_sensor
+    hopper_percent_sensor:
+      name: Hopper Level Sensor (%)
+      description: The molly_cody_feeder hopper_percent sensor entity used in the notification text.
+      default: sensor.molly_cody_feeder_hopper_percent
+      selector:
+        entity:
+          domain: sensor
+    hopper_portions_sensor:
+      name: Hopper Portions Left Sensor
+      description: The molly_cody_feeder hopper_portions_left sensor entity.
+      default: sensor.molly_cody_feeder_hopper_portions_left
+      selector:
+        entity:
+          domain: sensor
+    notify_service:
+      name: Notification Service
+      description: Home Assistant notify service to call (e.g., notify.persistent_notification or notify.mobile_app_phone).
+      default: notify.persistent_notification
+      selector:
+        text:
+
+mode: single
+max_exceeded: silent
+
+trigger:
+  - platform: state
+    entity_id: !input hopper_low_sensor
+    to: "on"
+    id: hopper_low_state
+  - platform: event
+    event_type: molly_cody_feeder_alert_event
+    event_data:
+      event_type: hopper_low
+    id: hopper_low_event
+  - platform: event
+    event_type: molly_cody_feeder_feed_event
+    event_data:
+      hopper_low: true
+    id: feed_hopper_low
+
+condition: []
+
+variables:
+  level_sensor: !input hopper_percent_sensor
+  portions_sensor: !input hopper_portions_sensor
+
+action:
+  - service: !input notify_service
+    data:
+      title: "🥣 Molly & Cody Feeder — Hopper Low"
+      message: >
+        The Molly & Cody Smart Feeder (molly_cody_feeder) kibble hopper is running low:
+        {{ states(level_sensor) }}% ({{ states(portions_sensor) }} portions remaining).
+        After refilling the hopper, press the Refill Hopper button or call
+        molly_cody_feeder.refill_hopper.

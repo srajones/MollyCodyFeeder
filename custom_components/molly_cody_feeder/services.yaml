@@ -1,0 +1,271 @@
+feed:
+  name: Feed Portions
+  description: Dispense 1 to 20 portions of kibble immediately (with optional camera and microphone anti-clog verification).
+  fields:
+    portions:
+      name: Portions
+      description: Number of kibble portions to dispense (1 to 20).
+      required: false
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 20
+          step: 1
+          mode: box
+    verify:
+      name: Verify Dispense
+      description: Open a live camera and microphone session to verify kibble hits the bowl.
+      required: false
+      default: false
+      selector:
+        boolean:
+
+verify_feed:
+  name: Feed & Verify
+  description: Dispense kibble while recording 8 kHz audio and before/after bowl frames to verify kibble impacts and detect clogs.
+  fields:
+    portions:
+      name: Portions
+      description: Number of kibble portions to dispense and verify (1 to 20).
+      required: false
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 20
+          step: 1
+          mode: box
+
+check_bowl:
+  name: Check Bowl
+  description: Capture an on-demand bowl snapshot and run computer-vision kibble fill inspection without dispensing food.
+
+set_schedule_slot:
+  name: Set Schedule Slot
+  description: Modify one of the 8 feeder meal schedule slots (DP 207) without disturbing the other slots.
+  fields:
+    slot:
+      name: Slot Number
+      description: Schedule slot index (1 to 8).
+      required: true
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 8
+          step: 1
+          mode: box
+    hour:
+      name: Hour
+      description: 24-hour clock hour (0 to 23).
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 23
+          step: 1
+          mode: box
+    minute:
+      name: Minute
+      description: Clock minute (0 to 59).
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 59
+          step: 1
+          mode: box
+    portions:
+      name: Portions
+      description: Portions to dispense for this meal slot (1 to 20).
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 20
+          step: 1
+          mode: box
+    days:
+      name: Days
+      description: Day specification ('everyday', 'weekdays', 'weekends', or comma-separated day names).
+      required: false
+      default: "everyday"
+      selector:
+        text:
+    enabled:
+      name: Enabled
+      description: Whether this meal schedule slot is enabled.
+      required: false
+      default: true
+      selector:
+        boolean:
+
+set_schedule_raw:
+  name: Set Raw Schedule (DP 207)
+  description: Write a raw 15-character-per-slot ASCII hex schedule string directly to DP 207.
+  fields:
+    schedule_raw:
+      name: Raw Schedule String
+      description: Raw DP 207 schedule string (multiple of 15 characters).
+      required: true
+      selector:
+        text:
+
+sync_schedules:
+  name: Sync Schedules from Feeder
+  description: Pull DP 207 from the feeder, decode all schedule slots, and re-arm pre-meal verification timers.
+
+refill_hopper:
+  name: Refill Hopper
+  description: Record a hopper refill in SQLite and reset the remaining hopper capacity to 100%.
+  fields:
+    capacity_portions:
+      name: Capacity (Portions)
+      description: Total kibble portions in the refilled hopper (10 to 500).
+      required: false
+      default: 240
+      selector:
+        number:
+          min: 10
+          max: 500
+          step: 1
+          mode: box
+    note:
+      name: Note
+      description: Optional note (e.g. kibble brand or bag size).
+      required: false
+      selector:
+        text:
+
+capture_snapshot:
+  name: Capture Bowl Snapshot
+  description: Capture an upright 720x1280 JPEG snapshot from the feeder camera via Cloud imm P2P.
+
+play_tts:
+  name: Play TTS on Feeder Speaker
+  description: Synthesize speech and stream 8 kHz G.711 mu-law talkback frames (reqId=7) to the feeder speaker.
+  fields:
+    message:
+      name: Message
+      description: Text message to speak over the feeder speaker.
+      required: true
+      selector:
+        text:
+    voice:
+      name: Voice
+      description: Edge-TTS neural voice identifier (e.g. en-US-AriaNeural).
+      required: false
+      default: "en-US-AriaNeural"
+      selector:
+        text:
+    volume:
+      name: Volume Gain
+      description: Audio volume multiplier (0.1 to 5.0).
+      required: false
+      default: 2.5
+      selector:
+        number:
+          min: 0.1
+          max: 5.0
+          step: 0.1
+          mode: slider
+    repeat:
+      name: Repeat Count
+      description: Number of times to repeat the spoken message (1 to 5).
+      required: false
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 5
+          step: 1
+          mode: box
+    prepend_chime:
+      name: Prepend Dinner Chime
+      description: Play the two-tone dinner chime before speaking the message.
+      required: false
+      default: false
+      selector:
+        boolean:
+
+play_audio:
+  name: Play Audio File on Feeder Speaker
+  description: Stream a local WAV or MP3 audio file to the feeder speaker via Cloud imm P2P (reqId=7).
+  fields:
+    audio_path:
+      name: Audio File Path
+      description: Absolute path to a local .wav or .mp3 file.
+      required: true
+      selector:
+        text:
+    volume:
+      name: Volume Gain
+      description: Audio volume multiplier (0.1 to 5.0).
+      required: false
+      default: 2.5
+      selector:
+        number:
+          min: 0.1
+          max: 5.0
+          step: 0.1
+          mode: slider
+    prepend_chime:
+      name: Prepend Dinner Chime
+      description: Play the two-tone dinner chime before the audio file.
+      required: false
+      default: false
+      selector:
+        boolean:
+
+play_chime:
+  name: Play Dinner Chime
+  description: Play the built-in two-tone dinner chime on the feeder speaker.
+  fields:
+    volume:
+      name: Volume Gain
+      description: Audio volume multiplier (0.1 to 5.0).
+      required: false
+      default: 2.5
+      selector:
+        number:
+          min: 0.1
+          max: 5.0
+          step: 0.1
+          mode: slider
+
+set_dp:
+  name: Set Tuya Data Point (DP)
+  description: Write a raw Tuya Data Point (DP) value to the feeder over Local LAN or Cloud.
+  fields:
+    dp_id:
+      name: DP ID
+      description: Numeric Tuya Data Point ID (e.g. 101, 103, 104, 106, 108, 134, 201, 207).
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 255
+          step: 1
+          mode: box
+    value:
+      name: Value
+      description: Value to write to the Data Point (boolean, integer, or string).
+      required: true
+      selector:
+        text:
+
+run_online_check:
+  name: Run Pre-Meal Online Check
+  description: Poll feeder connectivity over LAN/Cloud, ping optional healthcheck heartbeat, and alert if offline.
+  fields:
+    meal_time:
+      name: Meal Time Label
+      description: Optional scheduled meal time label (e.g. 07:00).
+      required: false
+      selector:
+        text:
+
+clear_clog_alert:
+  name: Clear Clog Alert
+  description: Reset active clog and weak-flow alert flags back to normal (ok).

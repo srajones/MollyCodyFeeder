@@ -1,12 +1,268 @@
-"""Bowl vision: daylight fill level, IR night-vision change detection, dog-at-bowl detection."""
+"""Bowl vision: daylight fill level, IR night-vision change detection, dog-at-bowl detection.
 
+Uses OpenCV (`cv2`) when installed, with a genuine NumPy + Pillow computer-vision implementation
+when running in environments without `opencv-python-headless`.
+"""
+
+import io
+import types
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
-import cv2
 import numpy as np
+from PIL import Image, ImageDraw
 
 from watchdog.analysis.results import VisualAnalysisResult
+
+
+def _build_cv2_compat() -> types.ModuleType:
+    """Genuine NumPy + Pillow implementation of the OpenCV primitives used by VisionMixin & media."""
+    mod = types.ModuleType("cv2")
+    mod.IMREAD_COLOR = 1
+    mod.IMWRITE_JPEG_QUALITY = 1
+    mod.COLOR_BGR2RGB = 4
+    mod.COLOR_RGB2BGR = 4
+    mod.COLOR_BGR2GRAY = 6
+    mod.COLOR_BGR2HSV = 40
+    mod.COLOR_BGR2LAB = 44
+    mod.COLOR_LAB2BGR = 56
+    mod.FONT_HERSHEY_SIMPLEX = 0
+
+    def imread(path: str, flags: int = 1) -> Optional[np.ndarray]:
+        try:
+            with Image.open(path) as im:
+                rgb = np.asarray(im.convert("RGB"), dtype=np.uint8)
+                return np.ascontiguousarray(rgb[:, :, ::-1])
+        except Exception:
+            return None
+
+    def imwrite(path: str, img_bgr: np.ndarray) -> bool:
+        try:
+            rgb = np.ascontiguousarray(img_bgr[:, :, ::-1]) if img_bgr.ndim == 3 else img_bgr
+            Image.fromarray(rgb).save(path, quality=92)
+            return True
+        except Exception:
+            return False
+
+    def imencode(ext: str, img_bgr: np.ndarray, params: Any = None) -> Tuple[bool, np.ndarray]:
+        try:
+            quality = 90
+            if params and len(params) >= 2 and params[0] == mod.IMWRITE_JPEG_QUALITY:
+                quality = int(params[1])
+            rgb = np.ascontiguousarray(img_bgr[:, :, ::-1]) if img_bgr.ndim == 3 else img_bgr
+            buf = io.BytesIO()
+            fmt = "JPEG" if ext.lower() in (".jpg", ".jpeg") else "PNG"
+            Image.fromarray(rgb).save(buf, format=fmt, quality=quality)
+            return True, np.frombuffer(buf.getvalue(), dtype=np.uint8)
+        except Exception:
+            return False, np.zeros(0, dtype=np.uint8)
+
+    def imdecode(buf: np.ndarray, flags: int = 1) -> Optional[np.ndarray]:
+        try:
+            with Image.open(io.BytesIO(bytes(buf))) as im:
+                rgb = np.asarray(im.convert("RGB"), dtype=np.uint8)
+                return np.ascontiguousarray(rgb[:, :, ::-1])
+        except Exception:
+            return None
+
+    def LUT(src: np.ndarray, lut: np.ndarray) -> np.ndarray:
+        return np.asarray(lut, dtype=src.dtype)[src]
+
+    def cvtColor(src: np.ndarray, code: int) -> np.ndarray:
+        if code == mod.COLOR_BGR2GRAY:
+            b = src[:, :, 0].astype(np.uint32)
+            g = src[:, :, 1].astype(np.uint32)
+            r = src[:, :, 2].astype(np.uint32)
+            return ((1868 * b + 9617 * g + 4899 * r + 8192) >> 14).astype(np.uint8)
+        if code == mod.COLOR_BGR2RGB:
+            return np.ascontiguousarray(src[:, :, ::-1])
+        if code == mod.COLOR_BGR2HSV:
+            rgb = np.ascontiguousarray(src[:, :, ::-1])
+            hsv = np.asarray(Image.fromarray(rgb).convert("HSV"), dtype=np.uint8).copy()
+            hsv[:, :, 0] = (hsv[:, :, 0].astype(np.uint16) * 180 // 255).astype(np.uint8)
+            return hsv
+        if code == mod.COLOR_BGR2LAB:
+            rgb = np.ascontiguousarray(src[:, :, ::-1])
+            return np.asarray(Image.fromarray(rgb).convert("YCbCr"), dtype=np.uint8).copy()
+        if code == mod.COLOR_LAB2BGR:
+            rgb = np.asarray(Image.fromarray(src, mode="YCbCr").convert("RGB"), dtype=np.uint8)
+            return np.ascontiguousarray(rgb[:, :, ::-1])
+        return src.copy()
+
+    def _gaussian_kernel_1d(k: int, sigma: float) -> np.ndarray:
+        if k <= 1:
+            return np.array([1.0], dtype=np.float32)
+        if sigma <= 0:
+            sigma = 0.3 * ((k - 1) * 0.5 - 1.0) + 0.8
+        x = np.arange(k, dtype=np.float32) - (k - 1) * 0.5
+        g = np.exp(-(x * x) / (2.0 * sigma * sigma))
+        return (g / g.sum()).astype(np.float32)
+
+    def _sep_filter2d(src: np.ndarray, kx: np.ndarray, ky: np.ndarray) -> np.ndarray:
+        arr = src.astype(np.float32)
+        h, w = arr.shape[:2]
+        px, py = len(kx) // 2, len(ky) // 2
+        if px > 0:
+            pad_spec = ((0, 0), (px, px)) if arr.ndim == 2 else ((0, 0), (px, px), (0, 0))
+            padded = np.pad(arr, pad_spec, mode="reflect")
+            arr = sum(kx[i] * padded[:, i : i + w] for i in range(len(kx)))
+        if py > 0:
+            pad_spec = ((py, py), (0, 0)) if arr.ndim == 2 else ((py, py), (0, 0), (0, 0))
+            padded = np.pad(arr, pad_spec, mode="reflect")
+            arr = sum(ky[i] * padded[i : i + h, :] for i in range(len(ky)))
+        if src.dtype == np.uint8:
+            return np.clip(np.round(arr), 0, 255).astype(np.uint8)
+        return arr.astype(src.dtype)
+
+    def GaussianBlur(src: np.ndarray, ksize: Tuple[int, int], sigmaX: float, sigmaY: float = 0.0) -> np.ndarray:
+        kx = _gaussian_kernel_1d(int(ksize[0]), float(sigmaX))
+        ky = _gaussian_kernel_1d(int(ksize[1]), float(sigmaY if sigmaY > 0 else sigmaX))
+        return _sep_filter2d(src, kx, ky)
+
+    def blur(src: np.ndarray, ksize: Tuple[int, int]) -> np.ndarray:
+        nx, ny = max(1, int(ksize[0])), max(1, int(ksize[1]))
+        kx = np.full(nx, 1.0 / nx, dtype=np.float32)
+        ky = np.full(ny, 1.0 / ny, dtype=np.float32)
+        return _sep_filter2d(src, kx, ky)
+
+    class _CLAHE:
+        def __init__(self, clipLimit: float = 2.0, tileGridSize: Tuple[int, int] = (8, 8)) -> None:
+            self.clip_limit = float(clipLimit)
+            self.grid_x = max(1, int(tileGridSize[0]))
+            self.grid_y = max(1, int(tileGridSize[1]))
+
+        def apply(self, gray: np.ndarray) -> np.ndarray:
+            h, w = gray.shape[:2]
+            ty = max(1, (h + self.grid_y - 1) // self.grid_y)
+            tx = max(1, (w + self.grid_x - 1) // self.grid_x)
+            luts = np.zeros((self.grid_y, self.grid_x, 256), dtype=np.float32)
+            for gy in range(self.grid_y):
+                y0, y1 = gy * ty, min(h, (gy + 1) * ty)
+                if y1 <= y0:
+                    y0, y1 = max(0, h - ty), h
+                for gx in range(self.grid_x):
+                    x0, x1 = gx * tx, min(w, (gx + 1) * tx)
+                    if x1 <= x0:
+                        x0, x1 = max(0, w - tx), w
+                    tile = gray[y0:y1, x0:x1]
+                    n_pix = max(1, tile.size)
+                    hist = np.bincount(tile.ravel(), minlength=256).astype(np.float32)
+                    limit = max(1.0, self.clip_limit * n_pix / 256.0)
+                    excess = np.maximum(0.0, hist - limit)
+                    hist = np.minimum(hist, limit) + (excess.sum() / 256.0)
+                    cdf = np.cumsum(hist)
+                    luts[gy, gx] = np.clip((cdf - cdf[0]) * 255.0 / max(1.0, n_pix - cdf[0]), 0.0, 255.0)
+            yy = np.clip((np.arange(h, dtype=np.float32) + 0.5) / ty - 0.5, 0.0, self.grid_y - 1.0)
+            xx = np.clip((np.arange(w, dtype=np.float32) + 0.5) / tx - 0.5, 0.0, self.grid_x - 1.0)
+            gy0 = np.floor(yy).astype(np.int32)
+            gx0 = np.floor(xx).astype(np.int32)
+            gy1 = np.minimum(gy0 + 1, self.grid_y - 1)
+            gx1 = np.minimum(gx0 + 1, self.grid_x - 1)
+            wy = (yy - gy0)[:, None]
+            wx = (xx - gx0)[None, :]
+            v00 = luts[gy0[:, None], gx0[None, :], gray]
+            v01 = luts[gy0[:, None], gx1[None, :], gray]
+            v10 = luts[gy1[:, None], gx0[None, :], gray]
+            v11 = luts[gy1[:, None], gx1[None, :], gray]
+            out = (1.0 - wy) * ((1.0 - wx) * v00 + wx * v01) + wy * ((1.0 - wx) * v10 + wx * v11)
+            return np.clip(np.round(out), 0, 255).astype(np.uint8)
+
+    def createCLAHE(clipLimit: float = 2.0, tileGridSize: Tuple[int, int] = (8, 8)) -> _CLAHE:
+        return _CLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
+
+    def Canny(gray: np.ndarray, threshold1: float, threshold2: float) -> np.ndarray:
+        g = gray.astype(np.float32)
+        p = np.pad(g, ((1, 1), (1, 1)), mode="reflect")
+        gx = (p[:-2, 2:] + 2.0 * p[1:-1, 2:] + p[2:, 2:]) - (p[:-2, :-2] + 2.0 * p[1:-1, :-2] + p[2:, :-2])
+        gy = (p[2:, :-2] + 2.0 * p[2:, 1:-1] + p[2:, 2:]) - (p[:-2, :-2] + 2.0 * p[:-2, 1:-1] + p[:-2, 2:])
+        mag = np.hypot(gx, gy)
+        return np.where(mag >= float(threshold2), 255, 0).astype(np.uint8)
+
+    def dilate(src: np.ndarray, kernel: np.ndarray, iterations: int = 1) -> np.ndarray:
+        kh, kw = kernel.shape[:2] if kernel is not None else (3, 3)
+        ph, pw = kh // 2, kw // 2
+        out = src.copy()
+        for _ in range(max(1, int(iterations))):
+            p = np.pad(out, ((ph, ph), (pw, pw)), mode="edge")
+            h, w = out.shape[:2]
+            acc = np.zeros_like(out)
+            for dy in range(kh):
+                for dx in range(kw):
+                    acc = np.maximum(acc, p[dy : dy + h, dx : dx + w])
+            out = acc
+        return out
+
+    def rectangle(
+        img: np.ndarray,
+        pt1: Tuple[int, int],
+        pt2: Tuple[int, int],
+        color: Tuple[int, int, int],
+        thickness: int = 1,
+    ) -> np.ndarray:
+        h, w = img.shape[:2]
+        x1, y1 = max(0, min(w - 1, int(pt1[0]))), max(0, min(h - 1, int(pt1[1])))
+        x2, y2 = max(0, min(w, int(pt2[0]))), max(0, min(h, int(pt2[1])))
+        if x2 <= x1 or y2 <= y1:
+            return img
+        c = np.array(color[:3], dtype=np.uint8)
+        if thickness < 0:
+            img[y1:y2, x1:x2] = c
+        else:
+            t = max(1, int(thickness))
+            img[y1 : min(y2, y1 + t), x1:x2] = c
+            img[max(y1, y2 - t) : y2, x1:x2] = c
+            img[y1:y2, x1 : min(x2, x1 + t)] = c
+            img[y1:y2, max(x1, x2 - t) : x2] = c
+        return img
+
+    def getTextSize(text: str, fontFace: int, fontScale: float, thickness: int) -> Tuple[Tuple[int, int], int]:
+        return (max(10, int(len(text) * 11 * fontScale)), max(12, int(22 * fontScale))), 4
+
+    def putText(
+        img: np.ndarray,
+        text: str,
+        org: Tuple[int, int],
+        fontFace: int,
+        fontScale: float,
+        color: Tuple[int, int, int],
+        thickness: int = 1,
+    ) -> np.ndarray:
+        try:
+            pil_im = Image.fromarray(np.ascontiguousarray(img[:, :, ::-1]))
+            draw = ImageDraw.Draw(pil_im)
+            rgb_color = (int(color[2]), int(color[1]), int(color[0]))
+            draw.text((int(org[0]), max(0, int(org[1]) - 14)), text, fill=rgb_color)
+            img[:] = np.asarray(pil_im, dtype=np.uint8)[:, :, ::-1]
+        except Exception:
+            pass
+        return img
+
+    mod.imread = imread  # type: ignore[attr-defined]
+    mod.imwrite = imwrite  # type: ignore[attr-defined]
+    mod.imencode = imencode  # type: ignore[attr-defined]
+    mod.imdecode = imdecode  # type: ignore[attr-defined]
+    mod.LUT = LUT  # type: ignore[attr-defined]
+    mod.cvtColor = cvtColor  # type: ignore[attr-defined]
+    mod.GaussianBlur = GaussianBlur  # type: ignore[attr-defined]
+    mod.blur = blur  # type: ignore[attr-defined]
+    mod.createCLAHE = createCLAHE  # type: ignore[attr-defined]
+    mod.Canny = Canny  # type: ignore[attr-defined]
+    mod.dilate = dilate  # type: ignore[attr-defined]
+    mod.rectangle = rectangle  # type: ignore[attr-defined]
+    mod.getTextSize = getTextSize  # type: ignore[attr-defined]
+    mod.putText = putText  # type: ignore[attr-defined]
+    return mod
+
+
+try:
+    import cv2  # type: ignore[import-not-found]
+except ImportError:
+    import builtins
+    import sys
+
+    cv2 = _build_cv2_compat()
+    sys.modules.setdefault("cv2", cv2)
+    setattr(builtins, "cv2", cv2)
 
 
 class VisionMixin:

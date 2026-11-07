@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import os
+import struct
 import threading
 import time
 import uuid
@@ -11,7 +12,6 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from PIL import Image
-from aioice import stun
 
 from watchdog.molly.constants import MQTT_HOST, MQTT_PORT
 from watchdog.molly.imm_codec import (
@@ -23,6 +23,11 @@ from watchdog.molly.imm_codec import (
 )
 from watchdog.molly.imm_transport import _ImmSessionProtocol
 from watchdog.molly.media import _motor_active_recently, _motor_window, _save_frame_near
+
+try:
+    from aioice import stun  # type: ignore[import-not-found]
+except ImportError:
+    stun = None  # type: ignore[assignment]
 
 logger = logging.getLogger("poor_puppy.molly.camera")
 
@@ -193,6 +198,8 @@ class CameraMixin:
           and 8000 Hz G.711 A-law (`PCMA`) microphone audio (`conv=2`)
         - Optionally streams Two-Way Speaker audio (`speaker_alaw_bytes`) on `conv=0` + `conv=2`
         """
+        if stun is None:
+            raise RuntimeError("aioice is required for live camera sessions")
         loop = asyncio.get_running_loop()
 
         rtc_res = self.call_api(

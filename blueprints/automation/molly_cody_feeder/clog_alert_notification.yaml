@@ -1,0 +1,85 @@
+blueprint:
+  name: "Molly & Cody Smart Feeder — Clog, Missed Meal & Hardware Fault Alert"
+  description: >
+    Sends an urgent notification (and optional speaker TTS announcement on the
+    Molly & Cody Smart Feeder) whenever a clogged chute, empty hopper, missed meal,
+    or DP 255 hardware fault is detected by the standalone Home Assistant
+    molly_cody_feeder HACS integration.
+  domain: automation
+  input:
+    clog_binary_sensor:
+      name: Clog Detected Binary Sensor
+      description: The molly_cody_feeder clog_detected binary sensor entity.
+      default: binary_sensor.molly_cody_feeder_clog_detected
+      selector:
+        entity:
+          domain: binary_sensor
+    hardware_fault_sensor:
+      name: Hardware Fault Binary Sensor
+      description: The molly_cody_feeder hardware_fault binary sensor entity.
+      default: binary_sensor.molly_cody_feeder_hardware_fault
+      selector:
+        entity:
+          domain: binary_sensor
+    notify_service:
+      name: Notification Service
+      description: Home Assistant notify service to call (e.g., notify.persistent_notification or notify.mobile_app_phone).
+      default: notify.persistent_notification
+      selector:
+        text:
+    play_speaker_tts:
+      name: Play Speaker TTS Alert on Feeder
+      description: Also announce the clog alert over the feeder's built-in G.711 mulaw speaker.
+      default: false
+      selector:
+        boolean:
+    speaker_tts_message:
+      name: Speaker TTS Alert Message
+      description: Message spoken through the feeder speaker when play_speaker_tts is enabled.
+      default: "Attention! The dog feeder is clogged or empty. Please check the feeder bowl."
+      selector:
+        text:
+
+mode: single
+max_exceeded: silent
+
+trigger:
+  - platform: state
+    entity_id: !input clog_binary_sensor
+    to: "on"
+    id: clog_state_on
+  - platform: state
+    entity_id: !input hardware_fault_sensor
+    to: "on"
+    id: hardware_fault_on
+  - platform: event
+    event_type: molly_cody_feeder_alert_event
+    event_data:
+      event_type: clog_detected
+    id: clog_bus_event
+  - platform: event
+    event_type: molly_cody_feeder_feed_event
+    event_data:
+      outcome: motor_no_kibble
+    id: feed_motor_no_kibble
+
+condition: []
+
+action:
+  - service: !input notify_service
+    data:
+      title: "🚨 Molly & Cody Feeder Alert ({{ trigger.id }})"
+      message: >
+        The Molly & Cody Smart Feeder (molly_cody_feeder) detected an urgent feeding issue
+        (trigger: {{ trigger.id }}). Please inspect the chute, bowl, and kibble hopper.
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ play_tts }}"
+        sequence:
+          - service: molly_cody_feeder.play_tts
+            data:
+              message: !input speaker_tts_message
+              prepend_chime: true
+variables:
+  play_tts: !input play_speaker_tts

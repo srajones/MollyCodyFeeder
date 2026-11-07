@@ -1,0 +1,225 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Molly & Cody Smart Feeder",
+        "description": "Sign in with your Molly & Cody mobile app account to automatically discover your feeder ID and Local Key, or configure a Local LAN connection.",
+        "data": {
+          "email": "Molly & Cody App Email",
+          "password": "Molly & Cody App Password",
+          "country_code": "Phone Country Code (1 = US/Canada)",
+          "connection_mode": "Connection Mode (auto / cloud / lan)",
+          "device_id": "Device ID (optional override)",
+          "device_name": "Feeder Name",
+          "local_ip": "Feeder Local LAN IP Address (optional)",
+          "local_key": "16-char Tuya Local Key (optional override)",
+          "camera_password": "Camera / RTSP Password (optional)",
+          "enable_camera": "Enable Camera Snapshots & Image Entities (Optional)",
+          "enable_tts": "Enable Speaker Talkback, Chime & TTS",
+          "enable_verification": "Audio Anti-Clog Verification (Lightweight 8 kHz Motor vs. Kibble Audio — Recommended for All HAOS Boxes)",
+          "enable_vision_verification": "Visual Inner-Bowl Analysis (Optional OpenCV/Pillow Camera ROI — Higher Compute)",
+          "enable_mp4_recording": "Enable Full H.264 MP4 Clip Recording",
+          "enable_auto_retry": "Enable Anti-Jam Auto-Retry on Clog"
+        }
+      },
+      "lan": {
+        "title": "Configure Local LAN Feeder Connection",
+        "description": "Configure direct Local LAN TCP 6668 access to your Molly & Cody Smart Feeder.",
+        "data": {
+          "device_id": "Device ID",
+          "device_name": "Feeder Name",
+          "local_ip": "Feeder Local LAN IP Address",
+          "local_key": "16-char Tuya Local Key",
+          "enable_camera": "Enable Camera Snapshots & Image Entities (Optional)",
+          "enable_tts": "Enable Speaker Talkback, Chime & TTS",
+          "enable_verification": "Audio Anti-Clog Verification (Lightweight 8 kHz Motor vs. Kibble Audio — Recommended for All HAOS Boxes)"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Molly & Cody Smart Feeder",
+        "description": "Update account credentials, Local LAN IP address, or transport mode for your Molly & Cody Smart Feeder.",
+        "data": {
+          "email": "Molly & Cody App Email",
+          "password": "Molly & Cody App Password",
+          "country_code": "Phone Country Code (1 = US/Canada)",
+          "connection_mode": "Connection Mode (auto / cloud / lan)",
+          "device_id": "Device ID",
+          "device_name": "Feeder Name",
+          "local_ip": "Feeder Local LAN IP Address",
+          "local_key": "16-char Tuya Local Key",
+          "camera_password": "Camera / RTSP Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to the Molly & Cody Smart Feeder. Check your credentials, network, or Local LAN IP.",
+      "invalid_auth": "Invalid Molly & Cody account email or password.",
+      "invalid_lan_config": "Device ID, Local IP, and 16-char Local Key are required for Local LAN mode.",
+      "unknown": "An unexpected error occurred during setup."
+    },
+    "abort": {
+      "already_configured": "This Molly & Cody Smart Feeder is already configured.",
+      "reconfigure_successful": "Configuration updated successfully."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Molly & Cody Smart Feeder Options",
+        "description": "Configure anti-clog verification, hopper tracking, alert behavior, and modular compute toggles (disable heavy video/vision tasks on low-power Raspberry Pi / HAOS boxes while keeping lightweight 8 kHz audio anti-clog verification active).",
+        "data": {
+          "connection_mode": "Connection Mode (auto / cloud / lan)",
+          "scan_interval": "Status Poll Interval (seconds)",
+          "hopper_capacity_portions": "Hopper Capacity (portions)",
+          "hopper_low_percent": "Hopper Low Alert Threshold (%)",
+          "portion_weight_g": "Grams per Portion (g)",
+          "meal_preroll_seconds": "Scheduled Meal Camera Pre-Roll (seconds)",
+          "pre_meal_online_check_seconds": "Pre-Meal Connectivity Check Lead Time (seconds)",
+          "eaten_check_minutes": "Post-Meal Eaten Check Delay (minutes)",
+          "alert_mode": "Alert Mode (every_miss / no_food_hours)",
+          "no_food_alert_hours": "No-Food Starvation Timer Threshold (hours)",
+          "ting_rate_min": "Minimum Acoustic Kibble Ting Rate (tings/sec)",
+          "max_daily_retry_portions": "Maximum Auto-Retry Portions per Day",
+          "tts_voice": "Speaker TTS Voice (Edge-TTS)",
+          "tts_volume": "Speaker TTS Volume Gain",
+          "gemini_api_key": "Optional Gemini Vision API Key",
+          "enable_camera": "Enable Camera Snapshots & Image Entities (Optional)",
+          "enable_tts": "Enable Speaker Talkback, Chime & TTS",
+          "enable_verification": "Audio Anti-Clog Verification (Lightweight 8 kHz Motor vs. Kibble Audio — Recommended for All HAOS Boxes)",
+          "enable_vision_verification": "Visual Inner-Bowl Analysis (Optional OpenCV/Pillow Camera ROI — Higher Compute)",
+          "enable_mp4_recording": "Enable Full H.264 MP4 Clip Recording",
+          "enable_auto_retry": "Enable Anti-Jam Auto-Retry on Clog"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": { "name": "Feeder Status" },
+      "last_meal_time": { "name": "Last Meal Time" },
+      "last_meal_result": { "name": "Last Meal Result" },
+      "last_meal_outcome": { "name": "Last Meal Outcome" },
+      "last_meal_portions": { "name": "Last Meal Portions" },
+      "minutes_since_last_meal": { "name": "Minutes Since Last Meal" },
+      "next_meal_time": { "name": "Next Meal Time" },
+      "minutes_to_next_meal": { "name": "Minutes to Next Meal" },
+      "today_meals": { "name": "Today Meals" },
+      "today_fed": { "name": "Today Confirmed Meals" },
+      "today_problems": { "name": "Today Problems" },
+      "today_portions": { "name": "Today Portions" },
+      "week_meals": { "name": "7-Day Meals" },
+      "week_confirmed_pct": { "name": "7-Day Confirmed Rate" },
+      "kibble_flow": { "name": "Last Kibble Flow Rate" },
+      "kibble_flow_7d_avg": { "name": "7-Day Avg Kibble Flow" },
+      "last_motor_duration_sec": { "name": "Last Motor Duration" },
+      "bowl_fill_pct": { "name": "Bowl Fill Percentage" },
+      "hopper_portions_left": { "name": "Hopper Portions Left" },
+      "hopper_portions_used": { "name": "Hopper Portions Used" },
+      "hopper_percent": { "name": "Hopper Level" },
+      "hopper_days_left": { "name": "Hopper Days Remaining" },
+      "food_weight_g": { "name": "Bowl Weight" },
+      "active_transport": { "name": "Active Transport" },
+      "configured_mode": { "name": "Configured Mode" },
+      "schedule": { "name": "Meal Schedule" }
+    },
+    "binary_sensor": {
+      "clog_detected": { "name": "Clog Detected" },
+      "food_present": { "name": "Food in Bowl" },
+      "dog_at_bowl": { "name": "Dog at Bowl" },
+      "hopper_low": { "name": "Hopper Low" },
+      "online": { "name": "Feeder Online" },
+      "busy": { "name": "Feeder Busy" },
+      "hardware_fault": { "name": "Hardware Fault (DP 255)" },
+      "is_infrared_mode": { "name": "Infrared Night Mode" },
+      "weak_flow_warning": { "name": "Weak Kibble Flow Warning" }
+    },
+    "switch": {
+      "enable_camera": { "name": "Enable Camera Snapshots & Image Entities (Optional)" },
+      "enable_tts": { "name": "Enable Speaker Talkback & TTS" },
+      "enable_verification": { "name": "Audio Anti-Clog Verification (Lightweight 8 kHz Motor vs. Kibble Audio — Recommended for All HAOS Boxes)" },
+      "enable_vision_verification": { "name": "Visual Inner-Bowl Analysis (Optional OpenCV/Pillow Camera ROI — Higher Compute)" },
+      "enable_mp4_recording": { "name": "Enable MP4 Clip Recording" },
+      "enable_auto_retry": { "name": "Enable Anti-Jam Auto-Retry" }
+    },
+    "button": {
+      "feed_now": { "name": "Feed 1 Portion" },
+      "verify_feed_now": { "name": "Feed & Verify" },
+      "check_bowl": { "name": "Check Bowl" },
+      "refill_hopper": { "name": "Refill Hopper (100%)" },
+      "capture_snapshot": { "name": "Capture Bowl Snapshot" },
+      "play_chime": { "name": "Play Dinner Chime" },
+      "sync_schedules": { "name": "Sync Schedule from Feeder" },
+      "clear_clog_alert": { "name": "Clear Clog Alert" }
+    },
+    "camera": {
+      "bowl_camera": { "name": "Bowl Camera" }
+    },
+    "image": {
+      "latest_annotated": { "name": "Latest Annotated Bowl Image" },
+      "latest_before": { "name": "Latest Before-Meal Image" },
+      "latest_after": { "name": "Latest After-Meal Image" }
+    },
+    "event": {
+      "feed_event": { "name": "Feed Event" },
+      "alert_event": { "name": "Alert Event" }
+    }
+  },
+  "services": {
+    "feed": {
+      "name": "Feed Portions",
+      "description": "Dispense 1 to 20 portions of kibble immediately (with optional camera and microphone anti-clog verification)."
+    },
+    "verify_feed": {
+      "name": "Feed & Verify",
+      "description": "Dispense kibble while recording 8 kHz audio and optional before/after bowl frames to verify kibble impacts and detect clogs."
+    },
+    "check_bowl": {
+      "name": "Check Bowl",
+      "description": "Capture an on-demand bowl snapshot and run computer-vision kibble fill inspection without dispensing food."
+    },
+    "set_schedule_slot": {
+      "name": "Set Schedule Slot",
+      "description": "Modify one of the 8 feeder meal schedule slots (DP 207) without disturbing the other slots."
+    },
+    "set_schedule_raw": {
+      "name": "Set Raw Schedule (DP 207)",
+      "description": "Write a raw 15-character-per-slot ASCII hex schedule string directly to DP 207."
+    },
+    "sync_schedules": {
+      "name": "Sync Schedules from Feeder",
+      "description": "Pull DP 207 from the feeder, decode all schedule slots, and re-arm pre-meal verification timers."
+    },
+    "refill_hopper": {
+      "name": "Refill Hopper",
+      "description": "Record a hopper refill in SQLite and reset the remaining hopper capacity to 100%."
+    },
+    "capture_snapshot": {
+      "name": "Capture Bowl Snapshot",
+      "description": "Capture an upright 720x1280 JPEG snapshot from the feeder camera via Cloud imm P2P."
+    },
+    "play_tts": {
+      "name": "Play TTS on Feeder Speaker",
+      "description": "Synthesize speech and stream 8 kHz G.711 mu-law talkback frames (reqId=7) to the feeder speaker."
+    },
+    "play_audio": {
+      "name": "Play Audio File on Feeder Speaker",
+      "description": "Stream a local WAV or MP3 audio file to the feeder speaker via Cloud imm P2P (reqId=7)."
+    },
+    "play_chime": {
+      "name": "Play Dinner Chime",
+      "description": "Play the built-in two-tone dinner chime on the feeder speaker."
+    },
+    "set_dp": {
+      "name": "Set Tuya Data Point (DP)",
+      "description": "Write a raw Tuya Data Point (DP) value to the feeder over Local LAN or Cloud."
+    },
+    "run_online_check": {
+      "name": "Run Pre-Meal Online Check",
+      "description": "Poll feeder connectivity over LAN/Cloud, ping optional healthcheck heartbeat, and alert if offline."
+    },
+    "clear_clog_alert": {
+      "name": "Clear Clog Alert",
+      "description": "Reset active clog and weak-flow alert flags back to normal (ok)."
+    }
+  }
+}

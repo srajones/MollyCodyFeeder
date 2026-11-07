@@ -1,0 +1,224 @@
+title: Molly & Cody Smart Pet Feeder
+views:
+  - title: Feeder Overview
+    path: molly-cody-feeder
+    icon: mdi:paw
+    badges:
+      - entity: binary_sensor.molly_cody_feeder_online
+      - entity: binary_sensor.molly_cody_feeder_clog_detected
+      - entity: binary_sensor.molly_cody_feeder_hopper_low
+      - entity: binary_sensor.molly_cody_feeder_hardware_fault
+      - entity: sensor.molly_cody_feeder_active_transport
+    cards:
+      - type: vertical-stack
+        title: Live Bowl Camera & Verification Snapshots
+        cards:
+          - type: picture-entity
+            entity: camera.molly_cody_feeder_bowl_camera
+            name: Molly & Cody Live Bowl Camera (720x1280)
+            show_state: true
+            show_name: true
+          - type: horizontal-stack
+            cards:
+              - type: picture-entity
+                entity: image.molly_cody_feeder_before_feed
+                name: Before Feed
+              - type: picture-entity
+                entity: image.molly_cody_feeder_after_feed
+                name: After Feed
+              - type: picture-entity
+                entity: image.molly_cody_feeder_annotated_bowl
+                name: Annotated ROI
+
+      - type: entities
+        title: Feeder Status & Anti-Clog Telemetry
+        show_header_toggle: false
+        entities:
+          - entity: sensor.molly_cody_feeder_status
+            name: Overall Status
+          - entity: sensor.molly_cody_feeder_active_transport
+            name: Active Transport
+          - entity: sensor.molly_cody_feeder_configured_mode
+            name: Connection Mode
+          - entity: binary_sensor.molly_cody_feeder_online
+            name: Feeder Online
+          - entity: binary_sensor.molly_cody_feeder_busy
+            name: Session Busy
+          - entity: binary_sensor.molly_cody_feeder_clog_detected
+            name: Clog Detected
+          - entity: binary_sensor.molly_cody_feeder_weak_flow_warning
+            name: Weak Flow Warning
+          - entity: binary_sensor.molly_cody_feeder_hardware_fault
+            name: Hardware Fault (DP 255)
+          - entity: binary_sensor.molly_cody_feeder_food_present
+            name: Food Present in Bowl
+          - entity: binary_sensor.molly_cody_feeder_dog_at_bowl
+            name: Dog at Bowl
+          - entity: binary_sensor.molly_cody_feeder_is_infrared_mode
+            name: Infrared Night Vision Active
+          - entity: sensor.molly_cody_feeder_last_meal_time
+            name: Last Meal Time
+          - entity: sensor.molly_cody_feeder_last_meal_result
+            name: Last Meal Result
+          - entity: sensor.molly_cody_feeder_last_meal_portions
+            name: Last Meal Portions
+          - entity: sensor.molly_cody_feeder_minutes_since_last_meal
+            name: Minutes Since Last Meal
+          - entity: sensor.molly_cody_feeder_next_meal_time
+            name: Next Meal Time
+          - entity: sensor.molly_cody_feeder_minutes_to_next_meal
+            name: Minutes To Next Meal
+          - entity: sensor.molly_cody_feeder_today_meals
+            name: Today Meals
+          - entity: sensor.molly_cody_feeder_today_fed
+            name: Today Confirmed Meals
+          - entity: sensor.molly_cody_feeder_today_problems
+            name: Today Failed Meals
+          - entity: sensor.molly_cody_feeder_today_portions
+            name: Today Portions
+          - entity: sensor.molly_cody_feeder_week_confirmed_pct
+            name: 7-Day Confirmed Rate
+          - entity: sensor.molly_cody_feeder_kibble_flow
+            name: Kibble Flow Rate (tings/s)
+          - entity: sensor.molly_cody_feeder_kibble_flow_7d_avg
+            name: 7-Day Avg Kibble Flow
+          - entity: sensor.molly_cody_feeder_last_motor_duration_sec
+            name: Last Motor Duration
+          - entity: sensor.molly_cody_feeder_bowl_fill_pct
+            name: Bowl Fill Percentage
+          - entity: event.molly_cody_feeder_feed_event
+            name: Last Feed Event
+          - entity: event.molly_cody_feeder_alert_event
+            name: Last Alert Event
+
+      - type: vertical-stack
+        title: Hopper & Kibble Supply
+        cards:
+          - type: gauge
+            entity: sensor.molly_cody_feeder_hopper_percent
+            name: Hopper Level
+            unit: "%"
+            min: 0
+            max: 100
+            severity:
+              green: 40
+              yellow: 20
+              red: 0
+          - type: entities
+            entities:
+              - entity: sensor.molly_cody_feeder_hopper_portions_left
+                name: Portions Remaining
+              - entity: sensor.molly_cody_feeder_hopper_days_left
+                name: Estimated Days Left
+              - entity: binary_sensor.molly_cody_feeder_hopper_low
+                name: Hopper Low Warning
+              - entity: number.molly_cody_feeder_hopper_capacity_portions
+                name: Hopper Capacity (Portions)
+              - entity: number.molly_cody_feeder_portion_weight_g
+                name: Portion Weight (g)
+              - entity: button.molly_cody_feeder_refill_hopper
+                name: Mark Hopper Refilled
+
+      - type: entities
+        title: Quick Actions & Manual Feeding
+        show_header_toggle: false
+        entities:
+          - entity: number.molly_cody_feeder_feed_portions
+            name: Manual Feed Portions (1-20)
+          - entity: button.molly_cody_feeder_feed_1_portion
+            name: Feed 1 Portion (Instant)
+          - entity: button.molly_cody_feeder_verify_feed
+            name: Feed & Verify (Camera + Mic)
+          - entity: button.molly_cody_feeder_check_bowl
+            name: Check Bowl Now
+          - entity: button.molly_cody_feeder_capture_snapshot
+            name: Capture Bowl Snapshot
+          - entity: button.molly_cody_feeder_play_chime
+            name: Play Speaker Chime
+          - entity: button.molly_cody_feeder_sync_schedules
+            name: Sync Schedules from Feeder
+          - entity: button.molly_cody_feeder_clear_clog_alert
+            name: Clear Clog Alert
+          - type: button
+            name: Speak Dinner Call (TTS Service)
+            icon: mdi:bullhorn
+            tap_action:
+              action: call-service
+              service: molly_cody_feeder.play_tts
+              service_data:
+                message: "Dinner time! Come get your food!"
+                prepend_chime: true
+
+  - title: Schedule & Settings
+    path: molly-cody-schedule
+    icon: mdi:calendar-clock
+    cards:
+      - type: entities
+        title: Meal Schedule Summary & Slots (DP 207)
+        show_header_toggle: false
+        entities:
+          - entity: sensor.molly_cody_feeder_schedule
+            name: Active Schedule Summary
+          - entity: switch.molly_cody_feeder_slot_1_enabled
+            name: Slot 1 Enabled
+          - entity: number.molly_cody_feeder_slot_1_portions
+            name: Slot 1 Portions
+          - entity: switch.molly_cody_feeder_slot_2_enabled
+            name: Slot 2 Enabled
+          - entity: number.molly_cody_feeder_slot_2_portions
+            name: Slot 2 Portions
+          - entity: switch.molly_cody_feeder_slot_3_enabled
+            name: Slot 3 Enabled
+          - entity: number.molly_cody_feeder_slot_3_portions
+            name: Slot 3 Portions
+          - entity: switch.molly_cody_feeder_slot_4_enabled
+            name: Slot 4 Enabled
+          - entity: number.molly_cody_feeder_slot_4_portions
+            name: Slot 4 Portions
+          - entity: switch.molly_cody_feeder_slot_5_enabled
+            name: Slot 5 Enabled
+          - entity: number.molly_cody_feeder_slot_5_portions
+            name: Slot 5 Portions
+          - entity: switch.molly_cody_feeder_slot_6_enabled
+            name: Slot 6 Enabled
+          - entity: number.molly_cody_feeder_slot_6_portions
+            name: Slot 6 Portions
+          - entity: switch.molly_cody_feeder_slot_7_enabled
+            name: Slot 7 Enabled
+          - entity: number.molly_cody_feeder_slot_7_portions
+            name: Slot 7 Portions
+          - entity: switch.molly_cody_feeder_slot_8_enabled
+            name: Slot 8 Enabled
+          - entity: number.molly_cody_feeder_slot_8_portions
+            name: Slot 8 Portions
+
+      - type: entities
+        title: Hardware Controls & Modular Compute Toggles
+        show_header_toggle: false
+        entities:
+          - entity: select.molly_cody_feeder_connection_mode
+            name: Connection Mode (Auto / Cloud / LAN)
+          - entity: select.molly_cody_feeder_nightvision
+            name: IR Night Vision Mode (DP 108)
+          - entity: select.molly_cody_feeder_motion_sensitivity
+            name: Motion Sensitivity (DP 106)
+          - entity: select.molly_cody_feeder_alert_mode
+            name: Alert Mode
+          - entity: number.molly_cody_feeder_tts_volume
+            name: Speaker TTS Volume
+          - entity: switch.molly_cody_feeder_indicator_light
+            name: Indicator Light (DP 101)
+          - entity: switch.molly_cody_feeder_flip_screen
+            name: Flip Screen (DP 103)
+          - entity: switch.molly_cody_feeder_osd_watermark
+            name: OSD Watermark (DP 104)
+          - entity: switch.molly_cody_feeder_motion_switch
+            name: Motion Detection (DP 134)
+          - entity: switch.molly_cody_feeder_enable_auto_retry
+            name: Auto-Retry on Clog
+          - entity: switch.molly_cody_feeder_enable_tts
+            name: Speaker TTS Alerts
+          - entity: switch.molly_cody_feeder_enable_verification
+            name: Audio Anti-Clog Verification
+          - entity: switch.molly_cody_feeder_enable_vision_verification
+            name: Vision Bowl Verification

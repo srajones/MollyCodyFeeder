@@ -12,11 +12,23 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 from PIL import Image
-from aiortc import RTCConfiguration, RTCIceServer, RTCPeerConnection, RTCRtpSender, RTCSessionDescription
 
 from watchdog.molly.constants import MQTT_HOST, MQTT_PORT
 from watchdog.molly.crypto import _decrypt_mqtt_22
 from watchdog.molly.webrtc_compat import _PassiveAudioTrack
+
+try:
+    from aiortc import (  # type: ignore[import-not-found]
+        RTCConfiguration,
+        RTCIceServer,
+        RTCPeerConnection,
+        RTCRtpSender,
+        RTCSessionDescription,
+    )
+
+    _HAS_AIORTC = True
+except ImportError:
+    _HAS_AIORTC = False
 
 logger = logging.getLogger("poor_puppy.molly.webrtc")
 
@@ -36,6 +48,8 @@ class WebRtcMixin:
         trigger_delay_sec: float = 1.2,
         timeout_sec: float = 20.0,
     ) -> Dict[str, Any]:
+        if not _HAS_AIORTC:
+            raise RuntimeError("aiortc is not installed for WebRTC fallback")
         loop = asyncio.get_running_loop()
 
         # 1. Fetch fresh WebRTC signaling/TURN config (auto-relogins if needed)

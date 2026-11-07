@@ -6,8 +6,6 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import paho.mqtt.client as mqtt
-
 from watchdog.paths import PROJECT_ROOT
 from watchdog.env import load_env
 from watchdog.molly.camera import CameraMixin
@@ -75,7 +73,7 @@ class MollyFeederClient(
         self.cached_dps: Dict[str, Any] = {}
         self._seq: int = int(time.time()) % 100000
         self._lock = threading.RLock()
-        self._active_mqtt_client: Optional[mqtt.Client] = None
+        self._active_mqtt_client: Optional[Any] = None
         self._dp_ack_evt = threading.Event()
 
         self._load_session()

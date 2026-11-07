@@ -5,13 +5,11 @@ import hmac
 import logging
 import struct
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-import av
-import cv2
 import numpy as np
-from aioice import stun
 
+from watchdog.analysis.vision import cv2
 from watchdog.molly.imm_codec import (
     _IMM_CMD_AUDIO,
     _IMM_CMD_VIDEO,
@@ -23,6 +21,16 @@ from watchdog.molly.imm_codec import (
     _imm_media_payload,
     _imm_open_aes,
 )
+
+try:
+    import av  # type: ignore[import-not-found]
+except ImportError:
+    av = None  # type: ignore[assignment]
+
+try:
+    from aioice import stun  # type: ignore[import-not-found]
+except ImportError:
+    stun = None  # type: ignore[assignment]
 
 logger = logging.getLogger("poor_puppy.molly.imm_transport")
 
@@ -64,8 +72,8 @@ class _ImmSessionProtocol(asyncio.DatagramProtocol):
         self.snd_ts: Dict[int, Dict[int, float]] = {}
         self.snd_nxt: Dict[int, int] = {}
 
-        self.decode_video = decode_video
-        self.vcodec = av.CodecContext.create("h264", "r") if decode_video else None
+        self.decode_video = decode_video and (av is not None)
+        self.vcodec: Optional[Any] = av.CodecContext.create("h264", "r") if self.decode_video else None
         self._au_buf = bytearray()
         self._seen_sps = False
         self.video_frames: List[Tuple[float, bytes]] = []  # (monotonic ts, JPEG bytes)
@@ -111,7 +119,7 @@ class _ImmSessionProtocol(asyncio.DatagramProtocol):
     def datagram_received(self, data: bytes, addr: Tuple[str, int]):
         if self.cloud_only and addr[0].startswith(("192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.", "172.2", "172.3")):
             return
-        if _imm_is_stun(data):
+        if _imm_is_stun(data) and stun is not None:
             try:
                 msg = stun.parse_message(data)
             except Exception:
@@ -256,7 +264,7 @@ class _ImmSessionProtocol(asyncio.DatagramProtocol):
                     if end_bit and orig_type in (1, 5):
                         flush_frame = True
 
-            if flush_frame and self._au_buf:
+            if flush_frame and self._au_buf and av is not None:
                 au_bytes = bytes(self._au_buf)
                 self._au_buf.clear()
                 try:
