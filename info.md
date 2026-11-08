@@ -1,8 +1,27 @@
-# 🐶 Molly & Cody Smart Pet Feeder (`molly_cody_feeder` v0.7.0)
+# 🐶 Molly & Cody Smart Pet Feeder (`molly_cody_feeder` v0.8.0)
 
-**Molly & Cody Smart Pet Feeder** (`molly_cody_feeder`) is a **100% standalone, native Home Assistant HACS integration** for the **Molly & Cody 6L Smart Pet Feeder with Camera** (`and.mollycody.app01` / Tuya OEM `yv8xga2javjxtqdc`).
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom%20Integration-41BDF5.svg?style=for-the-badge)](https://github.com/srajones/MollyCodyFeeder)
+[![Release](https://img.shields.io/badge/Release-v0.8.0-2ea44f?style=for-the-badge)](https://github.com/srajones/MollyCodyFeeder/releases)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/srajones)
 
-> **Zero External VPS or Watchdog Server Required:** Everything runs natively inside Home Assistant (`custom_components/molly_cody_feeder/`). Camera streaming, speaker TTS, and acoustic/visual anti-clog verification are modular and individually toggleable in the integration's Config & Options Flow so low-compute Home Assistant hardware (such as Raspberry Pi, Home Assistant Green, or Home Assistant Yellow) only runs the features you choose.
+**Molly & Cody Smart Pet Feeder** (`molly_cody_feeder`) is a **100% standalone, native Home Assistant HACS integration** (and optional standalone Ubuntu VPS / Docker watchdog) for the **Molly & Cody 6L Smart Pet Feeder with Camera** (`and.mollycody.app01` / Tuya OEM `yv8xga2javjxtqdc`).
+
+> **Zero External VPS or Watchdog Server Required for Home Assistant:** Everything runs natively inside Home Assistant (`custom_components/molly_cody_feeder/`). Camera streaming, speaker TTS, and acoustic/visual anti-clog verification are modular and individually toggleable in the integration's Config & Options Flow so low-compute Home Assistant hardware (such as Raspberry Pi, Home Assistant Green, or Home Assistant Yellow) only runs the features you choose.
+
+---
+
+## 🚀 Easy Installation via HACS
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=srajones&repository=MollyCodyFeeder&category=integration)
+
+1. In Home Assistant, open **HACS → Integrations → ⋮ (top right menu) → Custom repositories**.
+2. Paste `https://github.com/srajones/MollyCodyFeeder` and select category **Integration**, then click **Add**.
+3. Find **Molly & Cody Smart Feeder** in HACS, click **Download**, and select version **`v0.8.0`**.
+4. **Restart Home Assistant** (**Developer Tools → Restart**).
+5. Go to **Settings → Devices & Services → + Add Integration** and search for **Molly & Cody Smart Pet Feeder**.
+6. Sign in with your **Molly & Cody app email & password** (or enter your feeder's Local LAN IP + 16-char Local Key) and choose which verification features to enable!
+
+> **Want to run it on an Ubuntu VPS or Docker server instead?** This repository also includes a full outbound-only Docker watchdog (`install_ubuntu.sh`, `pp-settings`, `update-pp`, and `vps_install.sh`). See the [full README on GitHub](https://github.com/srajones/MollyCodyFeeder) for 3-command VPS setup instructions.
 
 ---
 
@@ -37,10 +56,10 @@
 
 ---
 
-## 🚀 Quick Setup via HACS
+## ☕ Support the Project
 
-1. In Home Assistant, open **HACS → Integrations → ⋮ (top right) → Custom repositories**.
-2. Add this repository URL with category **Integration** and click **Download**.
-3. Restart Home Assistant.
-4. Go to **Settings → Devices & Services → Add Integration** and search for **Molly & Cody Smart Feeder**.
-5. Enter your Molly & Cody Cloud credentials (or Local LAN IP + Local Key) and select which optional camera/audio/vision verification features to enable for your Home Assistant hardware.
+If this integration helps keep your pets fed on time and gives you peace of mind, consider buying me a coffee!
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-srajones-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/srajones)
+
+👉 **[https://buymeacoffee.com/srajones](https://buymeacoffee.com/srajones)**

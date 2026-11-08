@@ -5,7 +5,7 @@
 #   sudo ./vps_install.sh --check              Preflight only: inspects everything, changes NOTHING
 #   sudo ./vps_install.sh                      Install / repair (asks before every change)
 #   sudo ./vps_install.sh --uninstall          Remove the page again (keeps the certificate)
-#   Options: --domain NAME (default poor-puppy.epicfury4d.live)   --yes (don't ask)
+#   Options: --domain NAME (default feeder.example.com)   --yes (don't ask)
 #
 # Designed for a VPS that already runs other nginx sites and docker compose projects. It ONLY touches:
 #   /opt/poor-puppy/docker-compose.override.yml        (git-ignored; publishes the API on 127.0.0.1:<free port>)
@@ -19,7 +19,7 @@
 # =====================================================================================================
 set -Eeuo pipefail
 
-DOMAIN="poor-puppy.epicfury4d.live"
+DOMAIN="feeder.example.com"
 MODE="install"
 ASSUME_YES=0
 PORT_RANGE_START=8090

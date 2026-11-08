@@ -4,6 +4,16 @@ Each round lives on its own branch (`v0.N`, branched from the previous round) an
 improvements focused on one goal: **a clogged chute or empty hopper must never go unnoticed**.
 Constraints: 2 vCPU / 4 GB shared VPS, no heavy dependencies, no regressions (tests must pass).
 
+## v0.8.0 — Public HACS Release, Dual Install Guide (HACS + Ubuntu VPS) & Sanitized Defaults
+Branched from `v0.7`. Goal: package `molly_cody_feeder` `v0.8.0` as the public default release for one-click HACS installation and standalone Ubuntu VPS deployment, with generic domain defaults and simplified documentation.
+
+1. **HACS Release Packaging (`v0.8.0`)**:
+   - Bumped `custom_components/molly_cody_feeder/manifest.json` and `const.py` to `0.8.0` with a release zip archive (`molly_cody_feeder.zip`) and `hacs.json` for seamless installation through HACS Custom Repositories.
+2. **Easy-to-Understand HACS + Ubuntu VPS Documentation (`README.md`, `info.md`)**:
+   - Step-by-step installation guides for both **Option 1: Home Assistant via HACS** (including small-compute HAOS Audio-Only verification profile) and **Option 2: Standalone Ubuntu VPS / Docker Watchdog** (`install_ubuntu.sh`, `pp-settings`, `update-pp`, and `vps_install.sh`).
+3. **Sanitized Public Repository Defaults & Sponsor Metadata (`vps_install.sh`, `.github/FUNDING.yml`)**:
+   - Replaced custom domain defaults in `vps_install.sh` with generic `feeder.example.com` and added GitHub funding metadata (`https://buymeacoffee.com/srajones`).
+
 ## v0.7.0 — Standalone Native Home Assistant HACS Integration (`custom_components/molly_cody_feeder/`)
 Branched from `v0.6`. Goal: deliver a **100% standalone, native Home Assistant HACS custom integration** (`molly_cody_feeder` v0.7.0) with zero external VPS or external watchdog server dependency, featuring an **Ultra-Lightweight Audio-Only Anti-Clog Verification Mode** optimized for small-compute HAOS boxes (Raspberry Pi / HA Green / Yellow) alongside individually toggleable camera, TTS, and vision features.
 

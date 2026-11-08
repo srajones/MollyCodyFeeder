@@ -1,21 +1,99 @@
-# 🐶 MollyCodyFeeder (`v0.7.0`) — Standalone Native Home Assistant HACS Integration & Anti-Clog Classifier
+# 🐶 MollyCodyFeeder (`v0.8.0`) — Home Assistant HACS Integration & VPS Anti-Clog Watchdog
 
-**MollyCodyFeeder** (`custom_components/molly_cody_feeder/`, domain `molly_cody_feeder`) is a **100% standalone, native Home Assistant HACS custom integration** for the **Molly & Cody 6L Smart Pet Feeder with Camera** (`and.mollycody.app01` / Tuya OEM `yv8xga2javjxtqdc`).
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom%20Integration-41BDF5.svg?style=for-the-badge)](https://github.com/srajones/MollyCodyFeeder)
+[![Release](https://img.shields.io/badge/Release-v0.8.0-2ea44f?style=for-the-badge)](https://github.com/srajones/MollyCodyFeeder/releases)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.4%2B-03A9F4?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io/)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/srajones)
 
-> **100% Standalone Native HACS Architecture (Zero External VPS Required):** The `v0.7.0` Home Assistant HACS integration runs completely inside Home Assistant (`custom_components/molly_cody_feeder/core/`) with **zero external VPS or external watchdog server dependency**. It features an **Ultra-Lightweight Audio-Only Anti-Clog Verification Mode** engineered specifically for small-compute HAOS boxes (Raspberry Pi, Home Assistant Green, Home Assistant Yellow), alongside individually toggleable Camera snapshots (`imm` `AES/KCP 330`), two-way speaker TTS (`G.711 mulaw`), and optional Visual Inner-Bowl Verification (`BowlAnalyzer`).
+**MollyCodyFeeder** (`custom_components/molly_cody_feeder/`, domain `molly_cody_feeder`) is a complete control, camera, speaker, and **anti-clog verification** suite for the **Molly & Cody 6L Smart Pet Feeder with Camera** (`and.mollycody.app01` / Tuya OEM `yv8xga2javjxtqdc`).
+
+Most smart pet feeders report "Fed successfully" as soon as the motor spins — even if the chute is jammed or the hopper is completely empty. **MollyCodyFeeder** listens to the feeder's microphone (and optionally checks the bowl camera) during every meal to verify that **hard kibble pellets actually hit the stainless-steel bowl**, alerting you and optionally auto-retrying if no food came out.
 
 ---
 
-## 🏠 Home Assistant HACS Installation & Configuration (`v0.7.0`)
+## 🚀 Two Ways to Install (Pick What Fits Your Setup)
 
-### 1. Install via HACS
-1. In Home Assistant, navigate to **HACS → Integrations → ⋮ (top right menu) → Custom repositories**.
-2. Add this repository URL with category **Integration**, then click **Download** on **Molly & Cody Smart Feeder**.
-3. Restart Home Assistant.
-4. Go to **Settings → Devices & Services → Add Integration** and select **Molly & Cody Smart Feeder** (`molly_cody_feeder`).
-5. Configure your connection mode (`auto`, `cloud`, or `lan`), Molly & Cody Cloud credentials (and/or local LAN IP + 16-byte Local Key), and modular compute toggles.
+You can run **MollyCodyFeeder** in **two ways**:
 
-### 2. Ultra-Lightweight Audio-Only Anti-Clog Verification Mode for Small-Compute HAOS Boxes (Raspberry Pi / HA Green / Yellow)
+| Deployment Option | Best For | What You Need |
+| :--- | :--- | :--- |
+| **[Option 1: Home Assistant via HACS](#-option-1-install-in-home-assistant-via-hacs-recommended)** | Home Assistant users (Raspberry Pi, HA Green, HA Yellow, Mini PC, NUC, Docker/HAOS) | Home Assistant + HACS (**100% standalone — zero external VPS required**) |
+| **[Option 2: Standalone Ubuntu VPS / Docker](#-option-2-install-on-an-ubuntu-vps-or-docker-server)** | Running a dedicated 24/7 cloud watchdog with Discord / Telegram / ntfy / HA alerts & optional HTTPS web control page | Any Ubuntu VPS (`2 vCPU / 4 GB RAM`) or Docker host |
+
+---
+
+## 🏠 Option 1: Install in Home Assistant via HACS (Recommended)
+
+> **100% Standalone Native HACS Architecture (Zero External VPS Required):** The `v0.8.0` Home Assistant HACS integration runs completely inside Home Assistant (`custom_components/molly_cody_feeder/core/`) with **zero external VPS or external watchdog server dependency**. It features an **Ultra-Lightweight Audio-Only Anti-Clog Verification Mode** engineered specifically for small-compute HAOS boxes (Raspberry Pi, Home Assistant Green, Home Assistant Yellow), alongside individually toggleable Camera snapshots (`imm` `AES/KCP 330`), two-way speaker TTS (`G.711 mulaw`), and optional Visual Inner-Bowl Verification (`BowlAnalyzer`).
+
+### Step 1 — Add to HACS & Download
+Click the button below to open this repository directly in HACS, or follow the manual steps underneath:
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=srajones&repository=MollyCodyFeeder&category=integration)
+
+**Manual HACS steps:**
+1. Open Home Assistant and go to **HACS → Integrations**.
+2. Click the **⋮** menu in the top-right corner and select **Custom repositories**.
+3. Enter the repository URL:
+   ```text
+   https://github.com/srajones/MollyCodyFeeder
+   ```
+4. Select **Integration** as the category and click **Add**.
+5. Find **Molly & Cody Smart Feeder** in the HACS list, click **Download**, and confirm version **`v0.8.0`**.
+6. **Restart Home Assistant** (**Settings → System → Restart** or **Developer Tools → Restart**).
+
+### Step 2 — Add the Integration in Home Assistant
+1. In Home Assistant, go to **Settings → Devices & Services**.
+2. Click **+ Add Integration** (bottom right) and search for **Molly & Cody Smart Pet Feeder** (`molly_cody_feeder`).
+3. Fill in the setup form:
+   - **Email & Password**: Your **Molly & Cody mobile app** account email and password (recommended — works for Cloud & Hybrid `auto` mode and automatically discovers your feeder's Device ID and Local Key).
+   - **Country Code**: `1` for US/Canada (or your country calling code).
+   - **Connection Mode**:
+     - `auto` *(Recommended)* — Uses Local LAN when reachable and falls back to Cloud automatically; uses Cloud for camera/microphone verification.
+     - `cloud` — 100% Cloud mode (works even if Home Assistant is on a different VLAN/network from the feeder).
+     - `lan` — Local LAN TCP 6668 only (requires feeder Local IP, Device ID, and 16-character Local Key).
+4. **Choose Your Feature Toggles** (can also be changed anytime later via **Configure**):
+   - On **Raspberry Pi / Home Assistant Green / Home Assistant Yellow**, keep the default **Audio Anti-Clog Verification** turned **ON** and leave **Visual Inner-Bowl Analysis** and **Camera Snapshots** turned **OFF** for near-zero CPU/RAM usage.
+   - On a **Mini PC / NUC / Proxmox VM**, you can enable **Camera Snapshots** and **Visual Inner-Bowl Analysis** as well.
+
+### Step 3 — (Optional) Import the Dashboard & Automation Blueprints
+- **Lovelace Dashboard**: Copy [`lovelace/molly_cody_dashboard.yaml`](lovelace/molly_cody_dashboard.yaml) into a new dashboard in Home Assistant (**Settings → Dashboards → Add Dashboard → Edit → Raw configuration editor**) for a ready-made 2-tab feeder control panel.
+- **Automation Blueprints**: Import the blueprints in [`blueprints/automation/molly_cody_feeder/`](blueprints/automation/molly_cody_feeder/) for instant mobile notifications when a clog or low hopper is detected.
+
+---
+
+## ☁️ Option 2: Install on an Ubuntu VPS or Docker Server
+
+If you don't use Home Assistant — or if you prefer running a standalone 24/7 watchdog container on an Ubuntu VPS with an optional HTTPS web control page and direct **Discord / Telegram / ntfy / Home Assistant webhook** alerts — you can install the standalone Docker watchdog in 3 commands:
+
+### Step 1 — Clone & Run the Ubuntu Installer
+```bash
+git clone -b v0.8 https://github.com/srajones/MollyCodyFeeder.git && cd MollyCodyFeeder
+cp .env.example .env
+nano .env                  # Add MOLLY_USER=your_email and MOLLY_PASS=your_password (or copy tuya_session.json)
+./install_ubuntu.sh        # Installs Docker, builds + starts the watchdog, and installs `pp-settings` & `update-pp`
+```
+
+### Step 2 — Configure Alerts & Test via `pp-settings`
+Run the interactive settings menu from anywhere on the VPS:
+```bash
+pp-settings
+```
+From `pp-settings`, you can configure **Discord / Telegram / ntfy / Home Assistant webhooks**, test **Speaker TTS**, trigger a **verified test feed**, mark the **hopper refilled**, or run **safe updates** (`update-pp --latest`).
+
+### Step 3 — (Optional) Enable the HTTPS Web Control Page on a Subdomain
+If your VPS runs `nginx` + `certbot` and you have a subdomain pointing to your VPS IP (e.g., `feeder.example.com`), run:
+```bash
+sudo ./vps_install.sh --domain feeder.example.com --check   # Read-only preflight check
+sudo ./vps_install.sh --domain feeder.example.com           # Sets up HTTPS, login, rate limits & web control UI
+```
+See the [full VPS deployment & `update-pp` guide below](#-outbound-only-ubuntu-vps-deployment--day-2-updates-update-pp) for all details.
+
+---
+
+## ⚡ Home Assistant HACS Architecture & Technical Reference (`v0.8.0`)
+
+### 1. Ultra-Lightweight Audio-Only Anti-Clog Verification Mode for Small-Compute HAOS Boxes (Raspberry Pi / HA Green / Yellow)
 Confirming whether kibble actually hit the stainless-steel bowl does **not** require video decoding: the acoustic signature of the **auger motor spinning alone** (clogged chute or empty hopper) vs. **motor + hard kibble pellets striking the steel bowl** is unmistakable.
 
 - **Tiny Bandwidth (`~8 KB/s`)**: On the feeder's `imm` (`AES/KCP 330`) protocol, microphone audio (`conv=2`) is **8000 Hz mono G.711 A-law** (`~8 KB/s` — only `~100–240 KB` for an entire meal!).
@@ -279,7 +357,7 @@ Then open **`http://<YOUR_LAN_IP>:8765`** (or `http://localhost:8765`):
 
 ```bash
 # First-time install:
-git clone -b v0.6 https://github.com/srajones/poor-puppy.git && cd poor-puppy
+git clone -b v0.8 https://github.com/srajones/MollyCodyFeeder.git && cd MollyCodyFeeder
 scp <mac>:~/Downloads/poor_puppy/tuya_session.json .     # or set MOLLY_USER / MOLLY_PASS in .env
 ./install_ubuntu.sh        # installs Docker, builds + starts the watchdog, waits for healthy, installs pp-settings & update-pp
 pp-settings                # numbered settings menu (saves .env and restarts the container)
@@ -456,10 +534,18 @@ See [`CHANGELOG.md`](CHANGELOG.md) for the per-branch (`v0.N`) improvement round
 ## 📁 Project Structure
 
 ```text
-poor_puppy/
+MollyCodyFeeder/
+├── custom_components/molly_cody_feeder/   # Standalone Native Home Assistant HACS Integration (v0.8.0)
+│   ├── __init__.py  config_flow.py  coordinator.py  const.py  diagnostics.py
+│   ├── sensor.py  binary_sensor.py  switch.py  button.py  number.py  select.py  camera.py  image.py  event.py
+│   ├── manifest.json  services.yaml  strings.json  translations/en.json
+│   └── core/                     # Self-contained engine (molly/, analysis/, service/, db.py, schedule_decoder.py)
+├── hacs.json  info.md            # HACS repository metadata & rendered store guide
+├── lovelace/                     # Ready-to-import 2-tab Lovelace dashboard YAML
+├── blueprints/automation/        # Home Assistant automation blueprints (clog alert & low hopper)
 ├── kibble / feeder_cli.py        # CLI (status, feed, verify, say, schedule, hopper, refill, history, daemon)
 ├── review_server.py              # Review Lab entry point (LAN testing tool)
-├── watchdog/
+├── watchdog/                     # Standalone Ubuntu VPS / Docker watchdog daemon & web control UI
 │   ├── config.py  env.py  paths.py   # settings (.env never overrides real env vars), project paths
 │   ├── db.py                     # crash-safe SQLite (WAL, migrations, hopper, learned baselines)
 │   ├── alerter.py                # Discord / Telegram / ntfy / Home Assistant + cooldown + heartbeat
@@ -485,11 +571,21 @@ poor_puppy/
 │   │   ├── http_api.py           #   local HTTP API (route tables)
 │   │   └── watchdog.py           #   PuppyFeederWatchdog composition root + daemon loop
 │   ├── review/  manager.py server.py   # Review Lab backend
-│   ├── web/templates/review.html # Review Lab page
+│   ├── web/templates/            # Web Control UI, Review Lab, Home Assistant helper & Settings pages
 │   ├── main.py                   # daemon entry point (python -m watchdog.main)
 │   └── molly_client.py analyzer.py     # backward-compatible re-export shims
 ├── scripts/calibrate.py          # label-driven calibration + tiny numpy model
-├── tests/test_regression.py      # stdlib unittest suite (22 tests)
-├── Dockerfile  docker-compose.yml  install_ubuntu.sh  requirements.txt  .env.example
+├── tests/                        # Unit, regression & 5-tier E2E test suites
+├── Dockerfile  docker-compose.yml  install_ubuntu.sh  vps_install.sh  update-pp  requirements.txt  .env.example
 └── CHANGELOG.md  docs/ARCHITECTURE.md
 ```
+
+---
+
+## ☕ Support the Project
+
+If **MollyCodyFeeder** helps keep your pets fed on time and gives you peace of mind, consider buying me a coffee!
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-srajones-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/srajones)
+
+👉 **[https://buymeacoffee.com/srajones](https://buymeacoffee.com/srajones)**

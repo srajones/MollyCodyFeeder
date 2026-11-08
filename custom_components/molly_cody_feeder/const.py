@@ -7,7 +7,7 @@ DOMAIN: str = "molly_cody_feeder"
 NAME: str = "Molly & Cody Smart Feeder"
 MANUFACTURER: str = "Molly & Cody (Tuya OEM)"
 MODEL: str = "M&C Smart Feeder 6L Camera (yv8xga2javjxtqdc)"
-VERSION: str = "0.7.0"
+VERSION: str = "0.8.0"
 
 PLATFORMS: List[str] = [
     "sensor",

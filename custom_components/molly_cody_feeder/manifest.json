@@ -20,5 +20,5 @@
     "aiortc>=1.9.0",
     "edge-tts>=6.1.9"
   ],
-  "version": "0.7.0"
+  "version": "0.8.0"
 }
